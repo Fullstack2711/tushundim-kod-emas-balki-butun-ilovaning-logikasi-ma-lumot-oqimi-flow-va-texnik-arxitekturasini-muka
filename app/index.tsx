@@ -10,6 +10,7 @@ import {
 	ActivityIndicator,
 	TouchableOpacity,
 	SafeAreaView,
+	Platform,
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
@@ -520,711 +521,741 @@ function KidsPointsApp() {
 				}}
 			/>
 
-			{/* Child profile selector carousel */}
-			<View style={styles.kidsSelectorContainer}>
-				<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.kidsScroll}>
-					{children.map((kid) => {
-						const isActive = activeChild?._id === kid._id;
-						return (
-							<Pressable
-								key={kid._id}
-								onPress={() => {
-									setActiveChildId(kid._id);
-									// reset quiz when changing child
-									quitQuiz();
-								}}
-								style={[styles.kidCard, isActive && styles.kidCardActive]}
-							>
-								<Text style={styles.kidEmoji}>{kid.emoji}</Text>
-								<View style={styles.kidDetails}>
-									<Text style={[styles.kidName, isActive && styles.kidNameActive]}>
-										{kid.name}
-									</Text>
-									<Text style={[styles.kidScoreText, isActive && styles.kidScoreTextActive]}>
-										★ {kid.score} ball
-									</Text>
-								</View>
-								{isActive && (
-									<Pressable
-										onPress={() => handleDeleteChild(kid._id, kid.name)}
-										style={styles.deleteKidMiniButton}
-									>
-										<Ionicons name="close" size={12} color="#ff4d4f" />
-									</Pressable>
-								)}
-							</Pressable>
-						);
-					})}
-
-					<Pressable onPress={() => setAddChildModalVisible(true)} style={styles.addKidButton}>
-						<Ionicons name="person-add-outline" size={18} color={colors.accent} />
-						<Text style={styles.addKidButtonText}>Qo’shish</Text>
-					</Pressable>
-				</ScrollView>
-			</View>
-
-			{/* Current Child Information & Statistics Banner */}
-			{activeChild ? (
-				<View style={styles.bannerContainer}>
-					<View style={styles.bannerHeader}>
-						<Text style={styles.bannerTitle}>{activeChild.emoji} {activeChild.name} profili</Text>
-						<View style={styles.badge}>
-							<Ionicons name="star" size={14} color="#f59e0b" />
-							<Text style={styles.badgeText}>Faol</Text>
-						</View>
-					</View>
-
-					<View style={styles.statsRow}>
-						{/* Stat 1: Total point score (Section 7) */}
-						<View style={styles.statBox}>
-							<Text style={styles.statLabel}>Umumiy Ball</Text>
-							<Text style={[styles.statValue, { color: colors.accent }]}>
-								{Math.max(0, activeChild.score)}
-							</Text>
-							<View style={[styles.statBadge, { backgroundColor: '#eff6ff' }]}>
-								<Ionicons name="trophy-outline" size={11} color={colors.accent} />
-								<Text style={[styles.statBadgeText, { color: colors.accent }]}>To’plangan</Text>
-							</View>
-						</View>
-
-						{/* Stat 2: Today positive sum */}
-						<View style={styles.statBox}>
-							<Text style={styles.statLabel}>Bugungi Ball</Text>
-							<Text style={[styles.statValue, { color: '#10b981' }]}>
-								+{stats.today}
-							</Text>
-							<View style={[styles.statBadge, { backgroundColor: '#ecfdf5' }]}>
-								<Ionicons name="flame-outline" size={11} color="#10b981" />
-								<Text style={[styles.statBadgeText, { color: '#10b981' }]}>Bugun</Text>
-							</View>
-						</View>
-
-						{/* Stat 3: Weekly positive sum */}
-						<View style={styles.statBox}>
-							<Text style={styles.statLabel}>Haftalik Ball</Text>
-							<Text style={[styles.statValue, { color: '#f59e0b' }]}>
-								+{stats.weekly}
-							</Text>
-							<View style={[styles.statBadge, { backgroundColor: '#fffbeb' }]}>
-								<Ionicons name="calendar-outline" size={11} color="#f59e0b" />
-								<Text style={[styles.statBadgeText, { color: '#f59e0b' }]}>Hafta</Text>
-							</View>
-						</View>
-					</View>
-				</View>
-			) : (
-				<View style={styles.noChildContainer}>
-					<Ionicons name="warning-outline" size={32} color="#f59e0b" />
-					<Text style={styles.noChildText}>Iltimos, avval bola profilini yarating!</Text>
-				</View>
-			)}
-
-			{/* Main Screen Navigation Tabs */}
-			<View style={styles.tabsContainer}>
-				<Pressable
-					onPress={() => setActiveTab('tasks')}
-					style={[styles.tabButton, activeTab === 'tasks' && styles.tabButtonActive]}
-				>
-					<Ionicons name="flame" size={18} color={activeTab === 'tasks' ? colors.accent : colors.muted} />
-					<Text style={[styles.tabButtonText, activeTab === 'tasks' && styles.tabButtonTextActive]}>
-						Vazifalar
-					</Text>
-				</Pressable>
-
-				<Pressable
-					onPress={() => setActiveTab('oneoff')}
-					style={[styles.tabButton, activeTab === 'oneoff' && styles.tabButtonActive]}
-				>
-					<Ionicons name="ribbon-outline" size={18} color={activeTab === 'oneoff' ? colors.accent : colors.muted} />
-					<Text style={[styles.tabButtonText, activeTab === 'oneoff' && styles.tabButtonTextActive]}>
-						Darsliklar
-					</Text>
-				</Pressable>
-
-				<Pressable
-					onPress={() => setActiveTab('tests')}
-					style={[styles.tabButton, activeTab === 'tests' && styles.tabButtonActive]}
-				>
-					<Ionicons name="book-outline" size={18} color={activeTab === 'tests' ? colors.accent : colors.muted} />
-					<Text style={[styles.tabButtonText, activeTab === 'tests' && styles.tabButtonTextActive]}>
-						Testlar
-					</Text>
-				</Pressable>
-
-				<Pressable
-					onPress={() => setActiveTab('rewards')}
-					style={[styles.tabButton, activeTab === 'rewards' && styles.tabButtonActive]}
-				>
-					<Ionicons name="gift-outline" size={18} color={activeTab === 'rewards' ? colors.accent : colors.muted} />
-					<Text style={[styles.tabButtonText, activeTab === 'rewards' && styles.tabButtonTextActive]}>
-						Mukofotlar
-					</Text>
-				</Pressable>
-
-				<Pressable
-					onPress={() => setActiveTab('logs')}
-					style={[styles.tabButton, activeTab === 'logs' && styles.tabButtonActive]}
-				>
-					<Ionicons name="time-outline" size={18} color={activeTab === 'logs' ? colors.accent : colors.muted} />
-					<Text style={[styles.tabButtonText, activeTab === 'logs' && styles.tabButtonTextActive]}>
-						Jurnal
-					</Text>
-				</Pressable>
-			</View>
-
-			{/* TAB CONTENT AREAS */}
-			<ScrollView style={styles.scrollContent} contentContainerStyle={styles.scrollContentInner}>
-				{activeChild && activeTab === 'tasks' && (
-					<View style={styles.section}>
-						{/* Subheader with Custom Item trigger */}
-						<View style={styles.sectionHeaderRow}>
-							<View>
-								<Text style={styles.sectionTitle}>Kunlik Amallar va Vazifalar</Text>
-								<Text style={styles.sectionSubtitle}>Ball qo’shadigan va ayiradigan harakatlar</Text>
-							</View>
-							<TouchableOpacity
-								style={styles.addCustomFab}
-								onPress={() => {
-									setCustomItemType('task');
-									setCustomEmoji('✍️');
-									setCustomItemModalVisible(true);
-								}}
-							>
-								<Ionicons name="add" size={16} color="#ffffff" />
-								<Text style={styles.addCustomFabText}>Yangi</Text>
-							</TouchableOpacity>
-						</View>
-
-						{/* Repeatable chores list */}
-						<Text style={styles.subCategoryTitle}>✨ Rag’batlantiruvchi Vazifalar</Text>
-						<View style={styles.gridContainer}>
-							{combinedTasks.map((task) => {
-								const todayCount = repeatableCounters[task.id] || 0;
+			{/* Main Content scrollable container, leaving room for floating bottom app bar */}
+			<View style={styles.mainContentWrapper}>
+				<ScrollView style={styles.scrollContent} contentContainerStyle={styles.scrollContentInner}>
+					{/* Child profile selector carousel */}
+					<View style={styles.kidsSelectorContainer}>
+						<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.kidsScroll}>
+							{children.map((kid) => {
+								const isActive = activeChild?._id === kid._id;
 								return (
-									<View key={task.id} style={styles.taskCard}>
-										<View style={styles.taskHeader}>
-											<Text style={styles.taskEmoji}>{task.emoji}</Text>
-											{todayCount > 0 && (
-												<View style={styles.counterBadge}>
-													<Text style={styles.counterBadgeText}>{todayCount}x</Text>
-												</View>
-											)}
+									<Pressable
+										key={kid._id}
+										onPress={() => {
+											setActiveChildId(kid._id);
+											// reset quiz when changing child
+											quitQuiz();
+										}}
+										style={[styles.kidCard, isActive && styles.kidCardActive]}
+									>
+										<Text style={styles.kidEmoji}>{kid.emoji}</Text>
+										<View style={styles.kidDetails}>
+											<Text style={[styles.kidName, isActive && styles.kidNameActive]}>
+												{kid.name}
+											</Text>
+											<Text style={[styles.kidScoreText, isActive && styles.kidScoreTextActive]}>
+												★ {kid.score} ball
+											</Text>
 										</View>
-										<Text style={styles.taskTitle}>{task.title}</Text>
-										<Text style={styles.taskPoints}>+{task.points} ball</Text>
-
-										<View style={styles.cardActionRow}>
-											{'isCustom' in task && (
-												<TouchableOpacity
-													onPress={() => handleDeleteCustomItem(task.id)}
-													style={styles.trashMiniButton}
-												>
-													<Ionicons name="trash-outline" size={13} color="#99a2b0" />
-												</TouchableOpacity>
-											)}
-											<TouchableOpacity
-												onPress={() => handleActionCommit(task.id, task.title, task.points)}
-												style={styles.addButton}
+										{isActive && (
+											<Pressable
+												onPress={() => handleDeleteChild(kid._id, kid.name)}
+												style={styles.deleteKidMiniButton}
 											>
-												<Ionicons name="add" size={16} color="#ffffff" />
-												<Text style={styles.addButtonText}>Bajarildi</Text>
-											</TouchableOpacity>
-										</View>
-									</View>
+												<Ionicons name="close" size={12} color="#ff4d4f" />
+											</Pressable>
+										)}
+									</Pressable>
 								);
 							})}
-						</View>
 
-						{/* Penalties List */}
-						<View style={[styles.sectionHeaderRow, { marginTop: spacing.xl }]}>
-							<View>
-								<Text style={styles.subCategoryTitle}>⚠️ Qoidabuzarlik va Jazolar</Text>
-								<Text style={styles.sectionSubtitle}>Noto’g’ri ishlar uchun ball ayiriladi</Text>
+							<Pressable onPress={() => setAddChildModalVisible(true)} style={styles.addKidButton}>
+								<Ionicons name="person-add-outline" size={18} color={colors.accent} />
+								<Text style={styles.addKidButtonText}>Qo’shish</Text>
+							</Pressable>
+						</ScrollView>
+					</View>
+
+					{/* Current Child Information & Statistics Banner */}
+					{activeChild ? (
+						<View style={styles.bannerContainer}>
+							<View style={styles.bannerHeader}>
+								<Text style={styles.bannerTitle}>{activeChild.emoji} {activeChild.name} profili</Text>
+								<View style={styles.badge}>
+									<Ionicons name="star" size={14} color="#f59e0b" />
+									<Text style={styles.badgeText}>Faol</Text>
+								</View>
 							</View>
-							<TouchableOpacity
-								style={[styles.addCustomFab, { backgroundColor: '#f59e0b' }]}
-								onPress={() => {
-									setCustomItemType('penalty');
-									setCustomEmoji('⚠️');
-									setCustomItemModalVisible(true);
-								}}
-							>
-								<Ionicons name="add" size={16} color="#ffffff" />
-								<Text style={styles.addCustomFabText}>Jazo qo’shish</Text>
-							</TouchableOpacity>
-						</View>
 
-						<View style={styles.gridContainer}>
-							{combinedPenalties.map((penalty) => {
-								const todayCount = repeatableCounters[penalty.id] || 0;
-								return (
-									<View key={penalty.id} style={[styles.taskCard, styles.penaltyCard]}>
-										<View style={styles.taskHeader}>
-											<Text style={styles.taskEmoji}>{penalty.emoji}</Text>
-											{todayCount > 0 && (
-												<View style={[styles.counterBadge, { backgroundColor: '#fee2e2' }]}>
-													<Text style={[styles.counterBadgeText, { color: '#ef4444' }]}>
-														{todayCount} marta
+							<View style={styles.statsRow}>
+								{/* Stat 1: Total point score (Section 7) */}
+								<View style={[styles.statBox, styles.statBoxBlue]}>
+									<Text style={styles.statLabel}>Umumiy Ball</Text>
+									<Text style={[styles.statValue, { color: colors.accent }]}>
+										{Math.max(0, activeChild.score)}
+									</Text>
+									<View style={[styles.statBadge, { backgroundColor: '#eff6ff' }]}>
+										<Ionicons name="trophy" size={11} color={colors.accent} />
+										<Text style={[styles.statBadgeText, { color: colors.accent }]}>To’plangan</Text>
+									</View>
+								</View>
+
+								{/* Stat 2: Today positive sum */}
+								<View style={[styles.statBox, styles.statBoxGreen]}>
+									<Text style={styles.statLabel}>Bugungi Ball</Text>
+									<Text style={[styles.statValue, { color: '#059669' }]}>
+										+{stats.today}
+									</Text>
+									<View style={[styles.statBadge, { backgroundColor: '#ecfdf5' }]}>
+										<Ionicons name="flame" size={11} color="#059669" />
+										<Text style={[styles.statBadgeText, { color: '#059669' }]}>Bugun</Text>
+									</View>
+								</View>
+
+								{/* Stat 3: Weekly positive sum */}
+								<View style={[styles.statBox, styles.statBoxAmber]}>
+									<Text style={styles.statLabel}>Haftalik Ball</Text>
+									<Text style={[styles.statValue, { color: '#d97706' }]}>
+										+{stats.weekly}
+									</Text>
+									<View style={[styles.statBadge, { backgroundColor: '#fffbeb' }]}>
+										<Ionicons name="calendar" size={11} color="#d97706" />
+										<Text style={[styles.statBadgeText, { color: '#d97706' }]}>Hafta</Text>
+									</View>
+								</View>
+							</View>
+						</View>
+					) : (
+						<View style={styles.noChildContainer}>
+							<Ionicons name="warning-outline" size={32} color="#f59e0b" />
+							<Text style={styles.noChildText}>Iltimos, avval bola profilini yarating!</Text>
+						</View>
+					)}
+
+					{/* TAB CONTENT AREAS */}
+					{activeChild && activeTab === 'tasks' && (
+						<View style={styles.section}>
+							{/* Subheader with Custom Item trigger */}
+							<View style={styles.sectionHeaderRow}>
+								<View>
+									<Text style={styles.sectionTitle}>Kunlik Amallar va Vazifalar</Text>
+									<Text style={styles.sectionSubtitle}>Ball qo’shadigan va ayiradigan harakatlar</Text>
+								</View>
+								<TouchableOpacity
+									style={styles.addCustomFab}
+									onPress={() => {
+										setCustomItemType('task');
+										setCustomEmoji('✍️');
+										setCustomItemModalVisible(true);
+									}}
+								>
+									<Ionicons name="add" size={16} color="#ffffff" />
+									<Text style={styles.addCustomFabText}>Yangi</Text>
+								</TouchableOpacity>
+							</View>
+
+							{/* Repeatable chores list */}
+							<Text style={styles.subCategoryTitle}>✨ Rag’batlantiruvchi Vazifalar</Text>
+							<View style={styles.gridContainer}>
+								{combinedTasks.map((task) => {
+									const todayCount = repeatableCounters[task.id] || 0;
+									return (
+										<View key={task.id} style={styles.taskCard}>
+											<View style={styles.taskHeader}>
+												<Text style={styles.taskEmoji}>{task.emoji}</Text>
+												{todayCount > 0 && (
+													<View style={styles.counterBadge}>
+														<Text style={styles.counterBadgeText}>{todayCount}x</Text>
+													</View>
+												)}
+											</View>
+											<Text style={styles.taskTitle}>{task.title}</Text>
+											<Text style={styles.taskPoints}>+{task.points} ball</Text>
+
+											<View style={styles.cardActionRow}>
+												{'isCustom' in task && (
+													<TouchableOpacity
+														onPress={() => handleDeleteCustomItem(task.id)}
+														style={styles.trashMiniButton}
+													>
+														<Ionicons name="trash-outline" size={13} color="#99a2b0" />
+													</TouchableOpacity>
+												)}
+												<TouchableOpacity
+													onPress={() => handleActionCommit(task.id, task.title, task.points)}
+													style={styles.addButton}
+												>
+													<Ionicons name="add" size={16} color="#ffffff" />
+													<Text style={styles.addButtonText}>Bajarildi</Text>
+												</TouchableOpacity>
+											</View>
+										</View>
+									);
+								})}
+							</View>
+
+							{/* Penalties List */}
+							<View style={[styles.sectionHeaderRow, { marginTop: spacing.xl }]}>
+								<View>
+									<Text style={styles.subCategoryTitle}>⚠️ Qoidabuzarlik va Jazolar</Text>
+									<Text style={styles.sectionSubtitle}>Noto’g’ri ishlar uchun ball ayiriladi</Text>
+								</View>
+								<TouchableOpacity
+									style={[styles.addCustomFab, { backgroundColor: '#ef4444' }]}
+									onPress={() => {
+										setCustomItemType('penalty');
+										setCustomEmoji('⚠️');
+										setCustomItemModalVisible(true);
+									}}
+								>
+									<Ionicons name="add" size={16} color="#ffffff" />
+									<Text style={styles.addCustomFabText}>Jazo qo’shish</Text>
+								</TouchableOpacity>
+							</View>
+
+							<View style={styles.gridContainer}>
+								{combinedPenalties.map((penalty) => {
+									const todayCount = repeatableCounters[penalty.id] || 0;
+									return (
+										<View key={penalty.id} style={[styles.taskCard, styles.penaltyCard]}>
+											<View style={styles.taskHeader}>
+												<Text style={styles.taskEmoji}>{penalty.emoji}</Text>
+												{todayCount > 0 && (
+													<View style={[styles.counterBadge, { backgroundColor: '#fee2e2' }]}>
+														<Text style={[styles.counterBadgeText, { color: '#ef4444' }]}>
+															{todayCount} marta
+														</Text>
+													</View>
+												)}
+											</View>
+											<Text style={[styles.taskTitle, styles.penaltyTitle]}>{penalty.title}</Text>
+											<Text style={[styles.taskPoints, { color: '#ef4444' }]}>
+												{penalty.points} ball
+											</Text>
+
+											<View style={styles.cardActionRow}>
+												{'isCustom' in penalty && (
+													<TouchableOpacity
+														onPress={() => handleDeleteCustomItem(penalty.id)}
+														style={styles.trashMiniButton}
+													>
+														<Ionicons name="trash-outline" size={13} color="#99a2b0" />
+													</TouchableOpacity>
+												)}
+												<TouchableOpacity
+													onPress={() => handleActionCommit(penalty.id, penalty.title, penalty.points)}
+													style={[styles.addButton, { backgroundColor: '#ef4444' }]}
+												>
+													<Text style={styles.addButtonText}>Qayd qilish</Text>
+												</TouchableOpacity>
+											</View>
+										</View>
+									);
+								})}
+							</View>
+						</View>
+					)}
+
+					{activeChild && activeTab === 'oneoff' && (
+						<View style={styles.section}>
+							<Text style={styles.sectionTitle}>Bir martalik darsliklar</Text>
+							<Text style={styles.sectionSubtitle}>Faqat bir marta o’rganib ko’p ball to’plang</Text>
+
+							{/* Sub tabs configuration */}
+							<View style={styles.subTabsContainer}>
+								{(['iymon', 'harf', 'tajvid', 'farz'] as const).map((tab) => {
+									const labels = {
+										iymon: '💎 Iymon',
+										harf: '🅰️ Alifbo',
+										tajvid: '📖 Tajvid',
+										farz: '🛡️ 40 Farz',
+									};
+									const isActive = oneoffSubTab === tab;
+									return (
+										<Pressable
+											key={tab}
+											onPress={() => setOneoffSubTab(tab)}
+											style={[styles.subTabButton, isActive && styles.subTabButtonActive]}
+										>
+											<Text style={[styles.subTabButtonText, isActive && styles.subTabButtonTextActive]}>
+												{labels[tab]}
+											</Text>
+										</Pressable>
+									);
+								})}
+							</View>
+
+							{/* Sub tab items */}
+							<View style={styles.unlocksList}>
+								{UNLOCK_TASKS.filter((task) => task.category === oneoffSubTab).map((task) => {
+									const isUnlocked = activeChild.unlocked?.includes(task.id);
+									return (
+										<View
+											key={task.id}
+											style={[styles.unlockRow, isUnlocked && styles.unlockRowCompleted]}
+										>
+											<View style={styles.unlockIconCol}>
+												<Text style={styles.unlockEmoji}>{task.emoji}</Text>
+											</View>
+
+											<View style={styles.unlockContentCol}>
+												<Text style={[styles.unlockTitle, isUnlocked && styles.unlockTitleCompleted]}>
+													{task.title}
+												</Text>
+												{task.description && (
+													<Text style={styles.unlockDesc}>{task.description}</Text>
+												)}
+												<Text style={styles.unlockPointsAward}>+{task.points} ball taqdim etiladi</Text>
+											</View>
+
+											<View style={styles.unlockActionCol}>
+												{isUnlocked ? (
+													<View style={styles.completedBadge}>
+														<Ionicons name="checkmark" size={14} color="#10b981" />
+														<Text style={styles.completedBadgeText}>Olingan</Text>
+													</View>
+												) : (
+													<TouchableOpacity
+														onPress={() =>
+															handleActionCommit(task.id, `O’rganildi: ${task.title}`, task.points, true)
+														}
+														style={styles.unlockButton}
+													>
+														<Text style={styles.unlockButtonText}>+{task.points}</Text>
+													</TouchableOpacity>
+												)}
+											</View>
+										</View>
+									);
+								})}
+							</View>
+						</View>
+					)}
+
+					{activeChild && activeTab === 'tests' && (
+						<View style={styles.section}>
+							<Text style={styles.sectionTitle}>Bilim sinash testlari</Text>
+							<Text style={styles.sectionSubtitle}>
+								Bosqichli rag’batlantirish tizimi: 100% to’g’ri bo’lsa +100 ball, 80-99% bo’lsa +25 ball!
+							</Text>
+
+							{/* Not in quiz mode: select topic */}
+							{!quizStarted && !selectedQuizTopic && (
+								<View style={styles.quizSelectionGrid}>
+									{QUIZ_TOPICS.map((topic) => (
+										<View key={topic.id} style={styles.quizTopicCard}>
+											<Text style={styles.quizTopicEmoji}>{topic.emoji}</Text>
+											<Text style={styles.quizTopicTitle}>{topic.title}</Text>
+											<Text style={styles.quizTopicLength}>
+												{topic.questions.length} ta savol mavjud
+											</Text>
+											<TouchableOpacity
+												onPress={() => startQuiz(topic)}
+												style={styles.startQuizButton}
+											>
+												<Text style={styles.startQuizButtonText}>Testni Boshlash</Text>
+											</TouchableOpacity>
+										</View>
+									))}
+								</View>
+							)}
+
+							{/* Quiz solving mode */}
+							{quizStarted && selectedQuizTopic && (
+								<View style={styles.quizInterfaceCard}>
+									<View style={styles.quizInterfaceHeader}>
+										<Text style={styles.quizTopicHeaderTitle}>
+											{selectedQuizTopic.emoji} {selectedQuizTopic.title} testi
+										</Text>
+										<TouchableOpacity onPress={quitQuiz} style={styles.quitQuizMiniBtn}>
+											<Text style={styles.quitQuizMiniBtnTxt}>Chiqish</Text>
+										</TouchableOpacity>
+									</View>
+
+									{!quizCompletedResult ? (
+										// Current active question
+										<View style={styles.quizActiveQuestionBody}>
+											<View style={styles.questionProgressRow}>
+												<Text style={styles.questionProgressText}>
+													Savol {currentQuestionIndex + 1} / {selectedQuizTopic.questions.length}
+												</Text>
+												<View style={styles.progressBarBg}>
+													<View
+														style={[
+															styles.progressBarFill,
+															{
+																width: `${
+																	((currentQuestionIndex + 1) /
+																		selectedQuizTopic.questions.length) *
+																	100
+																}%`,
+															},
+														]}
+													/>
+												</View>
+											</View>
+
+											<Text style={styles.questionText}>
+												{selectedQuizTopic.questions[currentQuestionIndex].question}
+											</Text>
+
+											<View style={styles.optionsList}>
+												{selectedQuizTopic.questions[currentQuestionIndex].options.map(
+													(option, idx) => {
+														const isSelected = selectedOptionIndex === idx;
+														return (
+															<Pressable
+																key={idx}
+																onPress={() => handleOptionSelect(idx)}
+																style={[
+																	styles.optionButton,
+																	isSelected && styles.optionButtonSelected,
+																]}
+															>
+																<View
+																	style={[
+																		styles.optionBullet,
+																		isSelected && styles.optionBulletSelected,
+																	]}
+																>
+																	{isSelected && (
+																		<View style={styles.optionBulletInner} />
+																	)}
+																</View>
+																<Text
+																	style={[
+																		styles.optionText,
+																		isSelected && styles.optionTextSelected,
+																	]}
+																>
+																	{option}
+																</Text>
+															</Pressable>
+														);
+													}
+												)}
+											</View>
+
+											<TouchableOpacity
+												disabled={selectedOptionIndex === null}
+												onPress={handleNextQuestion}
+												style={[
+													styles.nextQuestionButton,
+													selectedOptionIndex === null && styles.nextQuestionButtonDisabled,
+												]}
+											>
+												<Text style={styles.nextQuestionButtonText}>
+													{currentQuestionIndex + 1 === selectedQuizTopic.questions.length
+														? 'Natijani Ko’rish'
+														: 'Keyingi Savol'}
+												</Text>
+											</TouchableOpacity>
+										</View>
+									) : (
+										// Quiz completed result
+										<View style={styles.quizCompletedBody}>
+											<View style={styles.trophyIconContainer}>
+												<Ionicons
+													name="trophy"
+													size={48}
+													color={quizCompletedResult.points > 0 ? '#f59e0b' : '#99a2b0'}
+												/>
+											</View>
+
+											<Text style={styles.quizResultPercent}>
+												To’g’ri javob: {quizCompletedResult.percent}%
+											</Text>
+
+											<Text style={styles.quizResultMessage}>
+												{quizCompletedResult.message}
+											</Text>
+
+											{quizCompletedResult.points > 0 && (
+												<View style={styles.quizRewardBadge}>
+													<Ionicons name="sparkles" size={16} color="#ffffff" />
+													<Text style={styles.quizRewardBadgeText}>
+														+{quizCompletedResult.points} ball o’tkazildi!
 													</Text>
 												</View>
 											)}
-										</View>
-										<Text style={[styles.taskTitle, styles.penaltyTitle]}>{penalty.title}</Text>
-										<Text style={[styles.taskPoints, { color: '#ef4444' }]}>
-											{penalty.points} ball
-										</Text>
 
-										<View style={styles.cardActionRow}>
-											{'isCustom' in penalty && (
-												<TouchableOpacity
-													onPress={() => handleDeleteCustomItem(penalty.id)}
-													style={styles.trashMiniButton}
-												>
-													<Ionicons name="trash-outline" size={13} color="#99a2b0" />
-												</TouchableOpacity>
-											)}
-											<TouchableOpacity
-												onPress={() => handleActionCommit(penalty.id, penalty.title, penalty.points)}
-												style={[styles.addButton, { backgroundColor: '#ef4444' }]}
-											>
-												<Text style={styles.addButtonText}>Qayd qilish</Text>
+											<TouchableOpacity onPress={quitQuiz} style={styles.quizBackToListBtn}>
+												<Text style={styles.quizBackToListBtnText}>
+													Boshqa testlarni yechish
+												</Text>
 											</TouchableOpacity>
 										</View>
-									</View>
-								);
-							})}
+									)}
+								</View>
+							)}
 						</View>
-					</View>
-				)}
+					)}
 
-				{activeChild && activeTab === 'oneoff' && (
-					<View style={styles.section}>
-						<Text style={styles.sectionTitle}>Bir martalik darsliklar</Text>
-						<Text style={styles.sectionSubtitle}>Faqat bir marta o’rganib ko’p ball to’plang</Text>
+					{activeChild && activeTab === 'rewards' && (
+						<View style={styles.section}>
+							{/* Store header with custom reward option */}
+							<View style={styles.sectionHeaderRow}>
+								<View>
+									<Text style={styles.sectionTitle}>Mukofotlar Do’koni</Text>
+									<Text style={styles.sectionSubtitle}>Ballarni ajoyib mukofotlarga almashtiring</Text>
+								</View>
+								<TouchableOpacity
+									style={[styles.addCustomFab, { backgroundColor: '#10b981' }]}
+									onPress={() => {
+										setCustomItemType('reward');
+										setCustomEmoji('🎁');
+										setCustomItemModalVisible(true);
+									}}
+								>
+									<Ionicons name="add" size={16} color="#ffffff" />
+									<Text style={styles.addCustomFabText}>Yangi Mukofot</Text>
+								</TouchableOpacity>
+							</View>
 
-						{/* Sub tabs configuration */}
-						<View style={styles.subTabsContainer}>
-							{(['iymon', 'harf', 'tajvid', 'farz'] as const).map((tab) => {
-								const labels = {
-									iymon: '💎 Iymon',
-									harf: '🅰️ Alifbo',
-									tajvid: '📖 Tajvid',
-									farz: '🛡️ 40 Farz',
-								};
-								const isActive = oneoffSubTab === tab;
-								return (
-									<Pressable
-										key={tab}
-										onPress={() => setOneoffSubTab(tab)}
-										style={[styles.subTabButton, isActive && styles.subTabButtonActive]}
-									>
-										<Text style={[styles.subTabButtonText, isActive && styles.subTabButtonTextActive]}>
-											{labels[tab]}
-										</Text>
-									</Pressable>
-								);
-							})}
-						</View>
+							<View style={styles.gridContainer}>
+								{combinedRewards.map((reward) => {
+									const isClaimed = activeChild.claimed?.includes(reward.id);
+									const canAfford = activeChild.score >= reward.cost;
 
-						{/* Sub tab items */}
-						<View style={styles.unlocksList}>
-							{UNLOCK_TASKS.filter((task) => task.category === oneoffSubTab).map((task) => {
-								const isUnlocked = activeChild.unlocked?.includes(task.id);
-								return (
-									<View
-										key={task.id}
-										style={[styles.unlockRow, isUnlocked && styles.unlockRowCompleted]}
-									>
-										<View style={styles.unlockIconCol}>
-											<Text style={styles.unlockEmoji}>{task.emoji}</Text>
-										</View>
+									return (
+										<View
+											key={reward.id}
+											style={[
+												styles.rewardCard,
+												isClaimed && styles.rewardCardClaimed,
+												!canAfford && !isClaimed && styles.rewardCardCantAfford,
+											]}
+										>
+											<View style={styles.rewardEmojiContainer}>
+												<Text style={styles.rewardEmoji}>{reward.emoji}</Text>
+											</View>
+											<Text style={styles.rewardTitle}>{reward.title}</Text>
+											<Text style={styles.rewardCost}>{reward.cost} ball</Text>
 
-										<View style={styles.unlockContentCol}>
-											<Text style={[styles.unlockTitle, isUnlocked && styles.unlockTitleCompleted]}>
-												{task.title}
-											</Text>
-											{task.description && (
-												<Text style={styles.unlockDesc}>{task.description}</Text>
-											)}
-											<Text style={styles.unlockPointsAward}>+{task.points} ball taqdim etiladi</Text>
-										</View>
-
-										<View style={styles.unlockActionCol}>
-											{isUnlocked ? (
-												<View style={styles.completedBadge}>
-													<Ionicons name="checkmark" size={14} color="#10b981" />
-													<Text style={styles.completedBadgeText}>Olingan</Text>
+											{isClaimed ? (
+												<View style={[styles.claimButton, styles.claimedButtonState]}>
+													<Ionicons name="checkmark" size={14} color="#596579" />
+													<Text style={styles.claimedButtonText}>Olingan ✅</Text>
 												</View>
 											) : (
 												<TouchableOpacity
-													onPress={() =>
-														handleActionCommit(task.id, `O’rganildi: ${task.title}`, task.points, true)
-													}
-													style={styles.unlockButton}
+													disabled={!canAfford}
+													onPress={() => initiateClaimReward(reward)}
+													style={[
+														styles.claimButton,
+														canAfford ? styles.claimButtonEnabled : styles.claimButtonDisabled,
+													]}
 												>
-													<Text style={styles.unlockButtonText}>+{task.points}</Text>
+													<Text
+														style={[
+															styles.claimButtonText,
+															canAfford ? styles.claimButtonTextEnabled : styles.claimButtonTextDisabled,
+														]}
+													>
+														Sotib Olish
+													</Text>
 												</TouchableOpacity>
 											)}
-										</View>
-									</View>
-								);
-							})}
-						</View>
-					</View>
-				)}
 
-				{activeChild && activeTab === 'tests' && (
-					<View style={styles.section}>
-						<Text style={styles.sectionTitle}>Bilim sinash testlari</Text>
-						<Text style={styles.sectionSubtitle}>
-							Bosqichli rag’batlantirish tizimi: 100% to’g’ri bo’lsa +100 ball, 80-99% bo’lsa +25 ball!
-						</Text>
-
-						{/* Not in quiz mode: select topic */}
-						{!quizStarted && !selectedQuizTopic && (
-							<View style={styles.quizSelectionGrid}>
-								{QUIZ_TOPICS.map((topic) => (
-									<View key={topic.id} style={styles.quizTopicCard}>
-										<Text style={styles.quizTopicEmoji}>{topic.emoji}</Text>
-										<Text style={styles.quizTopicTitle}>{topic.title}</Text>
-										<Text style={styles.quizTopicLength}>
-											{topic.questions.length} ta savol mavjud
-										</Text>
-										<TouchableOpacity
-											onPress={() => startQuiz(topic)}
-											style={styles.startQuizButton}
-										>
-											<Text style={styles.startQuizButtonText}>Testni Boshlash</Text>
-										</TouchableOpacity>
-									</View>
-								))}
-							</View>
-						)}
-
-						{/* Quiz solving mode */}
-						{quizStarted && selectedQuizTopic && (
-							<View style={styles.quizInterfaceCard}>
-								<View style={styles.quizInterfaceHeader}>
-									<Text style={styles.quizTopicHeaderTitle}>
-										{selectedQuizTopic.emoji} {selectedQuizTopic.title} testi
-									</Text>
-									<TouchableOpacity onPress={quitQuiz} style={styles.quitQuizMiniBtn}>
-										<Text style={styles.quitQuizMiniBtnTxt}>Chiqish</Text>
-									</TouchableOpacity>
-								</View>
-
-								{!quizCompletedResult ? (
-									// Current active question
-									<View style={styles.quizActiveQuestionBody}>
-										<View style={styles.questionProgressRow}>
-											<Text style={styles.questionProgressText}>
-												Savol {currentQuestionIndex + 1} / {selectedQuizTopic.questions.length}
-											</Text>
-											<View style={styles.progressBarBg}>
-												<View
-													style={[
-														styles.progressBarFill,
-														{
-															width: `${
-																((currentQuestionIndex + 1) /
-																	selectedQuizTopic.questions.length) *
-																100
-															}%`,
-														},
-													]}
-												/>
-											</View>
-										</View>
-
-										<Text style={styles.questionText}>
-											{selectedQuizTopic.questions[currentQuestionIndex].question}
-										</Text>
-
-										<View style={styles.optionsList}>
-											{selectedQuizTopic.questions[currentQuestionIndex].options.map(
-												(option, idx) => {
-													const isSelected = selectedOptionIndex === idx;
-													return (
-														<Pressable
-															key={idx}
-															onPress={() => handleOptionSelect(idx)}
-															style={[
-																styles.optionButton,
-																isSelected && styles.optionButtonSelected,
-															]}
-														>
-															<View
-																style={[
-																	styles.optionBullet,
-																	isSelected && styles.optionBulletSelected,
-																]}
-															>
-																{isSelected && (
-																	<View style={styles.optionBulletInner} />
-																)}
-															</View>
-															<Text
-																style={[
-																	styles.optionText,
-																	isSelected && styles.optionTextSelected,
-																]}
-															>
-																{option}
-															</Text>
-														</Pressable>
-													);
-												}
-											)}
-										</View>
-
-										<TouchableOpacity
-											disabled={selectedOptionIndex === null}
-											onPress={handleNextQuestion}
-											style={[
-												styles.nextQuestionButton,
-												selectedOptionIndex === null && styles.nextQuestionButtonDisabled,
-											]}
-										>
-											<Text style={styles.nextQuestionButtonText}>
-												{currentQuestionIndex + 1 === selectedQuizTopic.questions.length
-													? 'Natijani Ko’rish'
-													: 'Keyingi Savol'}
-											</Text>
-										</TouchableOpacity>
-									</View>
-								) : (
-									// Quiz completed result
-									<View style={styles.quizCompletedBody}>
-										<View style={styles.trophyIconContainer}>
-											<Ionicons
-												name="trophy-outline"
-												size={48}
-												color={quizCompletedResult.points > 0 ? '#f59e0b' : '#99a2b0'}
-											/>
-										</View>
-
-										<Text style={styles.quizResultPercent}>
-											To’g’ri javob: {quizCompletedResult.percent}%
-										</Text>
-
-										<Text style={styles.quizResultMessage}>
-											{quizCompletedResult.message}
-										</Text>
-
-										{quizCompletedResult.points > 0 && (
-											<View style={styles.quizRewardBadge}>
-												<Ionicons name="sparkles-outline" size={16} color="#ffffff" />
-												<Text style={styles.quizRewardBadgeText}>
-													+{quizCompletedResult.points} ball o’tkazildi!
-												</Text>
-											</View>
-										)}
-
-										<TouchableOpacity onPress={quitQuiz} style={styles.quizBackToListBtn}>
-											<Text style={styles.quizBackToListBtnText}>
-												Boshqa testlarni yechish
-											</Text>
-										</TouchableOpacity>
-									</View>
-								)}
-							</View>
-						)}
-					</View>
-				)}
-
-				{activeChild && activeTab === 'rewards' && (
-					<View style={styles.section}>
-						{/* Store header with custom reward option */}
-						<View style={styles.sectionHeaderRow}>
-							<View>
-								<Text style={styles.sectionTitle}>Mukofotlar Do’koni</Text>
-								<Text style={styles.sectionSubtitle}>Ballarni ajoyib mukofotlarga almashtiring</Text>
-							</View>
-							<TouchableOpacity
-								style={[styles.addCustomFab, { backgroundColor: '#10b981' }]}
-								onPress={() => {
-									setCustomItemType('reward');
-									setCustomEmoji('🎁');
-									setCustomItemModalVisible(true);
-								}}
-							>
-								<Ionicons name="add" size={16} color="#ffffff" />
-								<Text style={styles.addCustomFabText}>Yangi Mukofot</Text>
-							</TouchableOpacity>
-						</View>
-
-						<View style={styles.gridContainer}>
-							{combinedRewards.map((reward) => {
-								const isClaimed = activeChild.claimed?.includes(reward.id);
-								const canAfford = activeChild.score >= reward.cost;
-
-								return (
-									<View
-										key={reward.id}
-										style={[
-											styles.rewardCard,
-											isClaimed && styles.rewardCardClaimed,
-											!canAfford && !isClaimed && styles.rewardCardCantAfford,
-										]}
-									>
-										<View style={styles.rewardEmojiContainer}>
-											<Text style={styles.rewardEmoji}>{reward.emoji}</Text>
-										</View>
-										<Text style={styles.rewardTitle}>{reward.title}</Text>
-										<Text style={styles.rewardCost}>{reward.cost} ball</Text>
-
-										{isClaimed ? (
-											<View style={[styles.claimButton, styles.claimedButtonState]}>
-												<Ionicons name="checkmark" size={14} color="#596579" />
-												<Text style={styles.claimedButtonText}>Olingan ✅</Text>
-											</View>
-										) : (
-											<TouchableOpacity
-												disabled={!canAfford}
-												onPress={() => initiateClaimReward(reward)}
-												style={[
-													styles.claimButton,
-													canAfford ? styles.claimButtonEnabled : styles.claimButtonDisabled,
-												]}
-											>
-												<Text
-													style={[
-														styles.claimButtonText,
-														canAfford ? styles.claimButtonTextEnabled : styles.claimButtonTextDisabled,
-													]}
+											{'isCustom' in reward && (
+												<TouchableOpacity
+													onPress={() => handleDeleteCustomItem(reward.id)}
+													style={styles.deleteRewardMiniButton}
 												>
-													Sotib Olish
-												</Text>
-											</TouchableOpacity>
-										)}
-
-										{'isCustom' in reward && (
-											<TouchableOpacity
-												onPress={() => handleDeleteCustomItem(reward.id)}
-												style={styles.deleteRewardMiniButton}
-											>
-												<Ionicons name="trash-outline" size={12} color="#ff4d4f" />
-											</TouchableOpacity>
-										)}
-									</View>
-								);
-							})}
-						</View>
-					</View>
-				)}
-
-				{activeChild && activeTab === 'logs' && (
-					<View style={styles.section}>
-						<Text style={styles.sectionTitle}>Kundalik Jurnal va Hisobotlar</Text>
-						<Text style={styles.sectionSubtitle}>Ballar tarixi va olingan harakatlar hisoboti</Text>
-
-						{/* Grouped Logs lists */}
-						{dailyLogsGrouped && dailyLogsGrouped.length > 0 ? (
-							<View style={styles.logsGroupContainer}>
-								{dailyLogsGrouped.map((day) => {
-									const isExpanded = !!expandedLogs[day.dateStr];
-									return (
-										<View key={day.dateStr} style={styles.dayGroupCard}>
-											{/* Day Header row */}
-											<Pressable
-												onPress={() => toggleLogSection(day.dateStr)}
-												style={styles.dayHeaderRow}
-											>
-												<View style={styles.dayHeaderLeft}>
-													<Ionicons name="calendar-outline" size={16} color={colors.muted} style={{ marginRight: 6 }} />
-													<Text style={styles.dayDateText}>
-														{formatHeaderDate(day.dateStr)}
-													</Text>
-												</View>
-
-												<View style={styles.dayHeaderRight}>
-													{/* Sum indicators */}
-													{day.positiveSum > 0 && (
-														<Text style={styles.sumPositiveText}>+{day.positiveSum}</Text>
-													)}
-													{day.negativeSum < 0 && (
-														<Text style={styles.sumNegativeText}>{day.negativeSum}</Text>
-													)}
-
-													{isExpanded ? (
-														<Ionicons name="chevron-up-outline" size={16} color={colors.muted} />
-													) : (
-														<Ionicons name="chevron-down-outline" size={16} color={colors.muted} />
-													)}
-												</View>
-											</Pressable>
-
-											{/* Expanded items list */}
-											{isExpanded && (
-												<View style={styles.dayLogsList}>
-													{day.logs.map((log) => {
-														const isPositive = log.value >= 0;
-														const logTime = new Date(log.timestamp).toLocaleTimeString([], {
-															hour: '2-digit',
-															minute: '2-digit',
-														});
-
-														return (
-															<View key={log._id} style={styles.logItemRow}>
-																<View style={styles.logLeftCol}>
-																	<View
-																		style={[
-																			styles.indicatorDot,
-																			{
-																				backgroundColor: isPositive
-																					? '#e6f4ea'
-																					: '#fce8e6',
-																			},
-																		]}
-																	>
-																		<View
-																			style={[
-																				styles.indicatorDotInner,
-																				{
-																					backgroundColor: isPositive
-																						? '#137333'
-																						: '#c5221f',
-																				},
-																			]}
-																		/>
-																	</View>
-																	<View>
-																		<Text style={styles.logTitleText}>{log.title}</Text>
-																		<View style={styles.logTimeRow}>
-																			<Ionicons name="time-outline" size={10} color={colors.muted} />
-																			<Text style={styles.logTimeText}>{logTime}</Text>
-																		</View>
-																	</View>
-																</View>
-
-																<Text
-																	style={[
-																		styles.logValueText,
-																		{ color: isPositive ? '#137333' : '#c5221f' },
-																	]}
-																>
-																	{isPositive ? `+${log.value}` : log.value} ball
-																</Text>
-															</View>
-														);
-													})}
-												</View>
+													<Ionicons name="trash-outline" size={12} color="#ff4d4f" />
+												</TouchableOpacity>
 											)}
 										</View>
 									);
 								})}
 							</View>
-						) : (
-							<View style={styles.emptyHistoryState}>
-								<Ionicons name="time-outline" size={40} color="#cbd5e1" />
-								<Text style={styles.emptyHistoryText}>
-									Hali hech qanday harakatlar tarixi mavjud emas.
-								</Text>
-							</View>
-						)}
-					</View>
-				)}
-			</ScrollView>
+						</View>
+					)}
+
+					{activeChild && activeTab === 'logs' && (
+						<View style={styles.section}>
+							<Text style={styles.sectionTitle}>Kundalik Jurnal va Hisobotlar</Text>
+							<Text style={styles.sectionSubtitle}>Ballar tarixi va olingan harakatlar hisoboti</Text>
+
+							{/* Grouped Logs lists */}
+							{dailyLogsGrouped && dailyLogsGrouped.length > 0 ? (
+								<View style={styles.logsGroupContainer}>
+									{dailyLogsGrouped.map((day) => {
+										const isExpanded = !!expandedLogs[day.dateStr];
+										return (
+											<View key={day.dateStr} style={styles.dayGroupCard}>
+												{/* Day Header row */}
+												<Pressable
+													onPress={() => toggleLogSection(day.dateStr)}
+													style={styles.dayHeaderRow}
+												>
+													<View style={styles.dayHeaderLeft}>
+														<Ionicons name="calendar-outline" size={16} color={colors.muted} style={{ marginRight: 6 }} />
+														<Text style={styles.dayDateText}>
+															{formatHeaderDate(day.dateStr)}
+														</Text>
+													</View>
+
+													<View style={styles.dayHeaderRight}>
+														{/* Sum indicators */}
+														{day.positiveSum > 0 && (
+															<Text style={styles.sumPositiveText}>+{day.positiveSum}</Text>
+														)}
+														{day.negativeSum < 0 && (
+															<Text style={styles.sumNegativeText}>{day.negativeSum}</Text>
+														)}
+
+														{isExpanded ? (
+															<Ionicons name="chevron-up" size={16} color={colors.muted} />
+														) : (
+															<Ionicons name="chevron-down" size={16} color={colors.muted} />
+														)}
+													</View>
+												</Pressable>
+
+												{/* Expanded items list */}
+												{isExpanded && (
+													<View style={styles.dayLogsList}>
+														{day.logs.map((log) => {
+															const isPositive = log.value >= 0;
+															const logTime = new Date(log.timestamp).toLocaleTimeString([], {
+																hour: '2-digit',
+																minute: '2-digit',
+															});
+
+															return (
+																<View key={log._id} style={styles.logItemRow}>
+																	<View style={styles.logLeftCol}>
+																		<View
+																			style={[
+																				styles.indicatorDot,
+																				{
+																					backgroundColor: isPositive
+																						? '#e6f4ea'
+																						: '#fce8e6',
+																				},
+																			]}
+																		>
+																			<View
+																				style={[
+																					styles.indicatorDotInner,
+																					{
+																						backgroundColor: isPositive
+																							? '#137333'
+																							: '#c5221f',
+																					},
+																				]}
+																			/>
+																		</View>
+																		<View>
+																			<Text style={styles.logTitleText}>{log.title}</Text>
+																			<View style={styles.logTimeRow}>
+																				<Ionicons name="time-outline" size={10} color={colors.muted} />
+																				<Text style={styles.logTimeText}>{logTime}</Text>
+																			</View>
+																		</View>
+																	</View>
+
+																	<Text
+																		style={[
+																			styles.logValueText,
+																			{ color: isPositive ? '#137333' : '#c5221f' },
+																		]}
+																	>
+																		{isPositive ? `+${log.value}` : log.value} ball
+																	</Text>
+																</View>
+															);
+														})}
+													</View>
+												)}
+											</View>
+										);
+									})}
+								</View>
+							) : (
+								<View style={styles.emptyHistoryState}>
+									<Ionicons name="time-outline" size={40} color="#cbd5e1" />
+									<Text style={styles.emptyHistoryText}>
+										Hali hech qanday harakatlar tarixi mavjud emas.
+									</Text>
+								</View>
+							)}
+						</View>
+					)}
+				</ScrollView>
+			</View>
+
+			{/* MODERN FLOATING BOTTOM NAVIGATION APP BAR */}
+			<View style={styles.bottomAppBarContainer}>
+				<View style={styles.bottomAppBar}>
+					<Pressable
+						onPress={() => setActiveTab('tasks')}
+						style={[styles.appBarItem, activeTab === 'tasks' && styles.appBarItemActive]}
+					>
+						<Ionicons
+							name="flame"
+							size={22}
+							color={activeTab === 'tasks' ? colors.accent : '#64748b'}
+						/>
+						<Text style={[styles.appBarItemLabel, activeTab === 'tasks' && styles.appBarItemLabelActive]}>
+							Amallar
+						</Text>
+						{activeTab === 'tasks' && <View style={styles.activeIndicatorDot} />}
+					</Pressable>
+
+					<Pressable
+						onPress={() => setActiveTab('oneoff')}
+						style={[styles.appBarItem, activeTab === 'oneoff' && styles.appBarItemActive]}
+					>
+						<Ionicons
+							name="ribbon"
+							size={22}
+							color={activeTab === 'oneoff' ? colors.accent : '#64748b'}
+						/>
+						<Text style={[styles.appBarItemLabel, activeTab === 'oneoff' && styles.appBarItemLabelActive]}>
+							Darslik
+						</Text>
+						{activeTab === 'oneoff' && <View style={styles.activeIndicatorDot} />}
+					</Pressable>
+
+					<Pressable
+						onPress={() => setActiveTab('tests')}
+						style={[styles.appBarItem, activeTab === 'tests' && styles.appBarItemActive]}
+					>
+						<Ionicons
+							name="book"
+							size={22}
+							color={activeTab === 'tests' ? colors.accent : '#64748b'}
+						/>
+						<Text style={[styles.appBarItemLabel, activeTab === 'tests' && styles.appBarItemLabelActive]}>
+							Testlar
+						</Text>
+						{activeTab === 'tests' && <View style={styles.activeIndicatorDot} />}
+					</Pressable>
+
+					<Pressable
+						onPress={() => setActiveTab('rewards')}
+						style={[styles.appBarItem, activeTab === 'rewards' && styles.appBarItemActive]}
+					>
+						<Ionicons
+							name="gift"
+							size={22}
+							color={activeTab === 'rewards' ? colors.accent : '#64748b'}
+						/>
+						<Text style={[styles.appBarItemLabel, activeTab === 'rewards' && styles.appBarItemLabelActive]}>
+							Sotib olish
+						</Text>
+						{activeTab === 'rewards' && <View style={styles.activeIndicatorDot} />}
+					</Pressable>
+
+					<Pressable
+						onPress={() => setActiveTab('logs')}
+						style={[styles.appBarItem, activeTab === 'logs' && styles.appBarItemActive]}
+					>
+						<Ionicons
+							name="time"
+							size={22}
+							color={activeTab === 'logs' ? colors.accent : '#64748b'}
+						/>
+						<Text style={[styles.appBarItemLabel, activeTab === 'logs' && styles.appBarItemLabelActive]}>
+							Jurnal
+						</Text>
+						{activeTab === 'logs' && <View style={styles.activeIndicatorDot} />}
+					</Pressable>
+				</View>
+			</View>
 
 			{/* FLOATING SUCCESS/WARNING TOAST */}
 			{toast && (
@@ -1235,7 +1266,7 @@ function KidsPointsApp() {
 						toast.type === 'info' && styles.toastInfo,
 					]}
 				>
-					<Ionicons name="sparkles-outline" size={16} color="#ffffff" style={{ marginRight: spacing.sm }} />
+					<Ionicons name="sparkles" size={16} color="#ffffff" style={{ marginRight: spacing.sm }} />
 					<Text style={styles.toastText}>{toast.message}</Text>
 				</View>
 			)}
@@ -1460,13 +1491,16 @@ function KidsPointsApp() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: '#f7f8fb',
+		backgroundColor: '#f8fafc',
+	},
+	mainContentWrapper: {
+		flex: 1,
 	},
 	loadingContainer: {
 		flex: 1,
 		justifyContent: 'center',
 		alignItems: 'center',
-		backgroundColor: '#f7f8fb',
+		backgroundColor: '#f8fafc',
 	},
 	loadingText: {
 		marginTop: spacing.sm,
@@ -1476,7 +1510,7 @@ const styles = StyleSheet.create({
 	kidsSelectorContainer: {
 		backgroundColor: colors.surface,
 		borderBottomWidth: 1,
-		borderBottomColor: colors.border,
+		borderBottomColor: '#f1f5f9',
 		paddingVertical: spacing.sm,
 	},
 	kidsScroll: {
@@ -1487,20 +1521,20 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		backgroundColor: '#f1f5f9',
-		borderRadius: 16,
+		borderRadius: 20,
 		paddingVertical: 10,
-		paddingHorizontal: 14,
+		paddingHorizontal: 16,
 		marginRight: spacing.sm,
 		borderWidth: 1.5,
 		borderColor: 'transparent',
 		position: 'relative',
 	},
 	kidCardActive: {
-		backgroundColor: '#eff6ff',
+		backgroundColor: '#f0f9ff',
 		borderColor: colors.accent,
 	},
 	kidEmoji: {
-		fontSize: 24,
+		fontSize: 26,
 		marginRight: 8,
 	},
 	kidDetails: {
@@ -1508,7 +1542,7 @@ const styles = StyleSheet.create({
 	},
 	kidName: {
 		fontSize: 14,
-		fontWeight: '600',
+		fontWeight: '700',
 		color: colors.text,
 	},
 	kidNameActive: {
@@ -1520,21 +1554,26 @@ const styles = StyleSheet.create({
 		marginTop: 2,
 	},
 	kidScoreTextActive: {
-		color: colors.accent,
-		fontWeight: '500',
+		color: '#0284c7',
+		fontWeight: '600',
 	},
 	deleteKidMiniButton: {
 		position: 'absolute',
 		top: -4,
 		right: -4,
 		backgroundColor: '#ffffff',
-		borderRadius: 10,
-		width: 18,
-		height: 18,
+		borderRadius: 12,
+		width: 20,
+		height: 20,
 		justifyContent: 'center',
 		alignItems: 'center',
 		borderWidth: 1,
-		borderColor: '#fca5a5',
+		borderColor: '#fca3a3',
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 1 },
+		shadowOpacity: 0.1,
+		shadowRadius: 2,
+		elevation: 1,
 	},
 	addKidButton: {
 		flexDirection: 'row',
@@ -1542,27 +1581,30 @@ const styles = StyleSheet.create({
 		borderWidth: 1.5,
 		borderColor: colors.accent,
 		borderStyle: 'dashed',
-		borderRadius: 16,
+		borderRadius: 20,
 		paddingVertical: 10,
-		paddingHorizontal: 14,
+		paddingHorizontal: 16,
 		backgroundColor: 'transparent',
 	},
 	addKidButtonText: {
 		color: colors.accent,
 		fontSize: 13,
-		fontWeight: '600',
+		fontWeight: '700',
 		marginLeft: 6,
 	},
 	bannerContainer: {
 		backgroundColor: colors.surface,
-		margin: spacing.md,
+		marginHorizontal: spacing.md,
+		marginTop: spacing.md,
 		padding: spacing.md,
-		borderRadius: 20,
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.05,
-		shadowRadius: 10,
+		borderRadius: 24,
+		shadowColor: '#0f172a',
+		shadowOffset: { width: 0, height: 4 },
+		shadowOpacity: 0.04,
+		shadowRadius: 12,
 		elevation: 2,
+		borderWidth: 1,
+		borderColor: '#f1f5f9',
 	},
 	bannerHeader: {
 		flexDirection: 'row',
@@ -1572,22 +1614,22 @@ const styles = StyleSheet.create({
 	},
 	bannerTitle: {
 		fontSize: 16,
-		fontWeight: '700',
+		fontWeight: '800',
 		color: colors.text,
 	},
 	badge: {
 		flexDirection: 'row',
 		alignItems: 'center',
 		backgroundColor: '#fef3c7',
-		borderRadius: 10,
-		paddingHorizontal: 8,
-		paddingVertical: 3,
+		borderRadius: 12,
+		paddingHorizontal: 10,
+		paddingVertical: 4,
 	},
 	badgeText: {
 		fontSize: 10,
-		color: '#d97706',
-		fontWeight: '600',
-		marginLeft: 3,
+		color: '#b45309',
+		fontWeight: '700',
+		marginLeft: 4,
 	},
 	statsRow: {
 		flexDirection: 'row',
@@ -1595,36 +1637,48 @@ const styles = StyleSheet.create({
 	},
 	statBox: {
 		flex: 1,
-		backgroundColor: '#f8fafc',
-		borderRadius: 14,
-		padding: 10,
+		borderRadius: 18,
+		padding: 12,
 		alignItems: 'center',
-		marginHorizontal: 3,
+		marginHorizontal: 4,
+		borderWidth: 1.5,
+	},
+	statBoxBlue: {
+		backgroundColor: '#f0f9ff',
+		borderColor: '#e0f2fe',
+	},
+	statBoxGreen: {
+		backgroundColor: '#f0fdf4',
+		borderColor: '#dcfce7',
+	},
+	statBoxAmber: {
+		backgroundColor: '#fffbeb',
+		borderColor: '#fef3c7',
 	},
 	statLabel: {
-		fontSize: 10,
-		fontWeight: '600',
+		fontSize: 9,
+		fontWeight: '700',
 		color: colors.muted,
 		textTransform: 'uppercase',
-		letterSpacing: 0.5,
+		letterSpacing: 0.8,
 	},
 	statValue: {
-		fontSize: 20,
-		fontWeight: '800',
+		fontSize: 22,
+		fontWeight: '900',
 		marginVertical: 4,
 	},
 	statBadge: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		borderRadius: 8,
-		paddingHorizontal: 6,
-		paddingVertical: 2,
+		borderRadius: 10,
+		paddingHorizontal: 8,
+		paddingVertical: 3,
 		marginTop: 2,
 	},
 	statBadgeText: {
 		fontSize: 9,
-		fontWeight: '600',
-		marginLeft: 3,
+		fontWeight: '700',
+		marginLeft: 4,
 	},
 	noChildContainer: {
 		alignItems: 'center',
@@ -1632,48 +1686,19 @@ const styles = StyleSheet.create({
 		backgroundColor: colors.surface,
 		margin: spacing.md,
 		padding: spacing.xl,
-		borderRadius: 20,
+		borderRadius: 24,
 	},
 	noChildText: {
 		marginTop: spacing.sm,
 		fontSize: 14,
 		color: colors.text,
-		fontWeight: '600',
-	},
-	tabsContainer: {
-		flexDirection: 'row',
-		backgroundColor: colors.surface,
-		paddingHorizontal: spacing.sm,
-		paddingVertical: 10,
-		borderBottomWidth: 1,
-		borderBottomColor: colors.border,
-		justifyContent: 'space-between',
-	},
-	tabButton: {
-		flex: 1,
-		alignItems: 'center',
-		justifyContent: 'center',
-		paddingVertical: 6,
-	},
-	tabButtonActive: {
-		borderBottomWidth: 2,
-		borderBottomColor: colors.accent,
-	},
-	tabButtonText: {
-		fontSize: 10,
-		color: colors.muted,
-		fontWeight: '500',
-		marginTop: 4,
-	},
-	tabButtonTextActive: {
-		color: colors.accent,
 		fontWeight: '700',
 	},
 	scrollContent: {
 		flex: 1,
 	},
 	scrollContentInner: {
-		paddingBottom: spacing.xxl,
+		paddingBottom: 110, // Ensure content isn't blocked by bottom App Bar
 	},
 	section: {
 		padding: spacing.md,
@@ -1686,7 +1711,7 @@ const styles = StyleSheet.create({
 	},
 	sectionTitle: {
 		fontSize: 18,
-		fontWeight: '700',
+		fontWeight: '800',
 		color: colors.text,
 	},
 	sectionSubtitle: {
@@ -1696,7 +1721,7 @@ const styles = StyleSheet.create({
 	},
 	subCategoryTitle: {
 		fontSize: 14,
-		fontWeight: '700',
+		fontWeight: '800',
 		color: colors.text,
 		marginTop: spacing.md,
 		marginBottom: spacing.sm,
@@ -1705,14 +1730,19 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		backgroundColor: colors.accent,
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		borderRadius: 12,
+		paddingHorizontal: 14,
+		paddingVertical: 10,
+		borderRadius: 16,
+		shadowColor: '#2563eb',
+		shadowOffset: { width: 0, height: 4 },
+		shadowOpacity: 0.15,
+		shadowRadius: 6,
+		elevation: 3,
 	},
 	addCustomFabText: {
 		color: '#ffffff',
 		fontSize: 12,
-		fontWeight: '600',
+		fontWeight: '700',
 		marginLeft: 4,
 	},
 	gridContainer: {
@@ -1723,19 +1753,21 @@ const styles = StyleSheet.create({
 	taskCard: {
 		width: '47%',
 		backgroundColor: colors.surface,
-		borderRadius: 16,
+		borderRadius: 22,
 		padding: spacing.md,
 		margin: '1.5%',
-		shadowColor: '#000',
+		shadowColor: '#0f172a',
 		shadowOffset: { width: 0, height: 2 },
 		shadowOpacity: 0.03,
-		shadowRadius: 5,
+		shadowRadius: 6,
 		elevation: 1,
+		borderWidth: 1,
+		borderColor: '#f1f5f9',
 		justifyContent: 'space-between',
 	},
 	penaltyCard: {
 		borderColor: '#fee2e2',
-		borderWidth: 1,
+		borderWidth: 1.5,
 	},
 	taskHeader: {
 		flexDirection: 'row',
@@ -1744,34 +1776,34 @@ const styles = StyleSheet.create({
 		marginBottom: spacing.sm,
 	},
 	taskEmoji: {
-		fontSize: 28,
+		fontSize: 30,
 	},
 	counterBadge: {
 		backgroundColor: '#e6f4ea',
-		borderRadius: 10,
-		paddingHorizontal: 8,
-		paddingVertical: 2,
+		borderRadius: 12,
+		paddingHorizontal: 10,
+		paddingVertical: 4,
 	},
 	counterBadgeText: {
-		fontSize: 10,
+		fontSize: 11,
 		color: '#137333',
-		fontWeight: '700',
+		fontWeight: '800',
 	},
 	taskTitle: {
 		fontSize: 13,
-		fontWeight: '600',
+		fontWeight: '700',
 		color: colors.text,
 		lineHeight: 18,
 		minHeight: 36,
 	},
 	penaltyTitle: {
-		color: '#7f1d1d',
+		color: '#991b1b',
 	},
 	taskPoints: {
-		fontSize: 12,
-		fontWeight: '700',
+		fontSize: 13,
+		fontWeight: '800',
 		color: '#10b981',
-		marginTop: 4,
+		marginTop: 6,
 		marginBottom: spacing.md,
 	},
 	cardActionRow: {
@@ -1780,54 +1812,59 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 	},
 	trashMiniButton: {
-		padding: 6,
-		borderRadius: 8,
+		padding: 8,
+		borderRadius: 12,
 		backgroundColor: '#f1f5f9',
 	},
 	addButton: {
 		flex: 1,
 		flexDirection: 'row',
 		backgroundColor: '#10b981',
-		paddingVertical: 6,
-		borderRadius: 10,
+		paddingVertical: 8,
+		borderRadius: 14,
 		justifyContent: 'center',
 		alignItems: 'center',
-		marginLeft: 4,
+		marginLeft: 6,
+		shadowColor: '#10b981',
+		shadowOffset: { width: 0, height: 3 },
+		shadowOpacity: 0.15,
+		shadowRadius: 5,
+		elevation: 2,
 	},
 	addButtonText: {
 		color: '#ffffff',
 		fontSize: 11,
-		fontWeight: '700',
+		fontWeight: '800',
 	},
 	subTabsContainer: {
 		flexDirection: 'row',
 		marginVertical: spacing.md,
 		backgroundColor: '#e2e8f0',
-		borderRadius: 12,
-		padding: 3,
+		borderRadius: 14,
+		padding: 4,
 	},
 	subTabButton: {
 		flex: 1,
-		paddingVertical: 8,
+		paddingVertical: 10,
 		alignItems: 'center',
-		borderRadius: 10,
+		borderRadius: 12,
 	},
 	subTabButtonActive: {
 		backgroundColor: colors.surface,
 		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 1 },
-		shadowOpacity: 0.1,
-		shadowRadius: 2,
-		elevation: 1,
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.08,
+		shadowRadius: 4,
+		elevation: 2,
 	},
 	subTabButtonText: {
-		fontSize: 11,
+		fontSize: 12,
 		color: colors.muted,
-		fontWeight: '600',
+		fontWeight: '700',
 	},
 	subTabButtonTextActive: {
 		color: colors.text,
-		fontWeight: '700',
+		fontWeight: '800',
 	},
 	unlocksList: {
 		marginTop: spacing.xs,
@@ -1835,32 +1872,34 @@ const styles = StyleSheet.create({
 	unlockRow: {
 		flexDirection: 'row',
 		backgroundColor: colors.surface,
-		borderRadius: 16,
+		borderRadius: 22,
 		padding: spacing.md,
 		marginBottom: spacing.sm,
 		alignItems: 'center',
 		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 1 },
+		shadowOffset: { width: 0, height: 2 },
 		shadowOpacity: 0.02,
-		shadowRadius: 3,
+		shadowRadius: 4,
 		elevation: 1,
+		borderWidth: 1,
+		borderColor: '#f1f5f9',
 	},
 	unlockRowCompleted: {
-		backgroundColor: '#f4fbf7',
-		borderColor: '#d1fae5',
-		borderWidth: 1,
+		backgroundColor: '#f0fdf4',
+		borderColor: '#bbf7d0',
+		borderWidth: 1.5,
 	},
 	unlockIconCol: {
-		width: 44,
+		width: 46,
 		height: 44,
-		borderRadius: 12,
+		borderRadius: 14,
 		backgroundColor: '#f1f5f9',
 		justifyContent: 'center',
 		alignItems: 'center',
 		marginRight: spacing.md,
 	},
 	unlockEmoji: {
-		fontSize: 22,
+		fontSize: 24,
 	},
 	unlockContentCol: {
 		flex: 1,
@@ -1868,22 +1907,22 @@ const styles = StyleSheet.create({
 	},
 	unlockTitle: {
 		fontSize: 14,
-		fontWeight: '700',
+		fontWeight: '800',
 		color: colors.text,
 	},
 	unlockTitleCompleted: {
-		color: '#065f46',
+		color: '#15803d',
 	},
 	unlockDesc: {
 		fontSize: 11,
 		color: colors.muted,
-		marginTop: 3,
-		lineHeight: 15,
+		marginTop: 4,
+		lineHeight: 16,
 	},
 	unlockPointsAward: {
-		fontSize: 10,
+		fontSize: 11,
 		color: colors.accent,
-		fontWeight: '600',
+		fontWeight: '700',
 		marginTop: 4,
 	},
 	unlockActionCol: {
@@ -1893,52 +1932,54 @@ const styles = StyleSheet.create({
 	completedBadge: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		backgroundColor: '#d1fae5',
-		borderRadius: 8,
-		paddingHorizontal: 8,
-		paddingVertical: 4,
+		backgroundColor: '#dcfce7',
+		borderRadius: 10,
+		paddingHorizontal: 10,
+		paddingVertical: 5,
 	},
 	completedBadgeText: {
 		fontSize: 10,
-		color: '#065f46',
-		fontWeight: '700',
+		color: '#15803d',
+		fontWeight: '800',
 		marginLeft: 3,
 	},
 	unlockButton: {
 		backgroundColor: colors.accent,
-		borderRadius: 10,
-		paddingVertical: 6,
-		paddingHorizontal: 12,
+		borderRadius: 12,
+		paddingVertical: 8,
+		paddingHorizontal: 14,
 		justifyContent: 'center',
 		alignItems: 'center',
 	},
 	unlockButtonText: {
 		color: '#ffffff',
-		fontSize: 11,
-		fontWeight: '700',
+		fontSize: 12,
+		fontWeight: '800',
 	},
 	quizSelectionGrid: {
 		marginTop: spacing.sm,
 	},
 	quizTopicCard: {
 		backgroundColor: colors.surface,
-		borderRadius: 18,
+		borderRadius: 24,
 		padding: spacing.lg,
 		marginBottom: spacing.md,
 		alignItems: 'center',
 		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 1 },
+		shadowOffset: { width: 0, height: 4 },
 		shadowOpacity: 0.03,
-		shadowRadius: 5,
-		elevation: 1,
+		shadowRadius: 8,
+		elevation: 2,
+		borderWidth: 1,
+		borderColor: '#f1f5f9',
 	},
 	quizTopicEmoji: {
-		fontSize: 44,
+		fontSize: 48,
 		marginBottom: spacing.xs,
 	},
 	quizTopicTitle: {
 		fontSize: 16,
-		fontWeight: '700',
+		fontWeight: '800',
 		color: colors.text,
 		textAlign: 'center',
 	},
@@ -1950,51 +1991,58 @@ const styles = StyleSheet.create({
 	},
 	startQuizButton: {
 		backgroundColor: colors.accent,
-		borderRadius: 12,
-		paddingVertical: 10,
+		borderRadius: 16,
+		paddingVertical: 12,
 		paddingHorizontal: 24,
 		width: '100%',
 		alignItems: 'center',
+		shadowColor: '#2563eb',
+		shadowOffset: { width: 0, height: 4 },
+		shadowOpacity: 0.15,
+		shadowRadius: 8,
+		elevation: 3,
 	},
 	startQuizButtonText: {
 		color: '#ffffff',
 		fontSize: 13,
-		fontWeight: '700',
+		fontWeight: '800',
 	},
 	quizInterfaceCard: {
 		backgroundColor: colors.surface,
-		borderRadius: 20,
+		borderRadius: 24,
 		padding: spacing.md,
 		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 2 },
+		shadowOffset: { width: 0, height: 6 },
 		shadowOpacity: 0.05,
-		shadowRadius: 10,
-		elevation: 2,
+		shadowRadius: 15,
+		elevation: 3,
+		borderWidth: 1,
+		borderColor: '#f1f5f9',
 	},
 	quizInterfaceHeader: {
 		flexDirection: 'row',
 		justifyContent: 'space-between',
 		alignItems: 'center',
 		borderBottomWidth: 1,
-		borderBottomColor: colors.border,
+		borderBottomColor: '#f1f5f9',
 		paddingBottom: spacing.sm,
 		marginBottom: spacing.md,
 	},
 	quizTopicHeaderTitle: {
 		fontSize: 14,
-		fontWeight: '700',
+		fontWeight: '800',
 		color: colors.text,
 	},
 	quitQuizMiniBtn: {
-		paddingHorizontal: 10,
-		paddingVertical: 5,
-		borderRadius: 8,
+		paddingHorizontal: 12,
+		paddingVertical: 6,
+		borderRadius: 10,
 		backgroundColor: '#f1f5f9',
 	},
 	quitQuizMiniBtnTxt: {
 		fontSize: 11,
 		color: '#ef4444',
-		fontWeight: '700',
+		fontWeight: '800',
 	},
 	quizActiveQuestionBody: {
 		marginTop: spacing.xs,
@@ -2005,13 +2053,13 @@ const styles = StyleSheet.create({
 	questionProgressText: {
 		fontSize: 11,
 		color: colors.muted,
-		fontWeight: '600',
+		fontWeight: '700',
 		marginBottom: 6,
 	},
 	progressBarBg: {
-		height: 6,
+		height: 8,
 		backgroundColor: '#f1f5f9',
-		borderRadius: 3,
+		borderRadius: 4,
 		overflow: 'hidden',
 	},
 	progressBarFill: {
@@ -2020,7 +2068,7 @@ const styles = StyleSheet.create({
 	},
 	questionText: {
 		fontSize: 16,
-		fontWeight: '700',
+		fontWeight: '800',
 		color: colors.text,
 		lineHeight: 22,
 		marginBottom: spacing.md,
@@ -2032,7 +2080,7 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		backgroundColor: '#f8fafc',
-		borderRadius: 14,
+		borderRadius: 16,
 		padding: spacing.md,
 		marginBottom: spacing.sm,
 		borderWidth: 1.5,
@@ -2043,9 +2091,9 @@ const styles = StyleSheet.create({
 		borderColor: colors.accent,
 	},
 	optionBullet: {
-		width: 18,
+		width: 20,
 		height: 18,
-		borderRadius: 9,
+		borderRadius: 10,
 		borderWidth: 2,
 		borderColor: '#cbd5e1',
 		marginRight: spacing.md,
@@ -2066,15 +2114,16 @@ const styles = StyleSheet.create({
 		fontSize: 13,
 		color: colors.text,
 		lineHeight: 18,
+		fontWeight: '500',
 	},
 	optionTextSelected: {
 		color: colors.accent,
-		fontWeight: '600',
+		fontWeight: '700',
 	},
 	nextQuestionButton: {
 		backgroundColor: colors.accent,
-		borderRadius: 14,
-		paddingVertical: 12,
+		borderRadius: 16,
+		paddingVertical: 14,
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
@@ -2084,24 +2133,29 @@ const styles = StyleSheet.create({
 	nextQuestionButtonText: {
 		color: '#ffffff',
 		fontSize: 14,
-		fontWeight: '700',
+		fontWeight: '800',
 	},
 	quizCompletedBody: {
 		alignItems: 'center',
 		paddingVertical: spacing.lg,
 	},
 	trophyIconContainer: {
-		width: 80,
-		height: 80,
-		borderRadius: 40,
+		width: 84,
+		height: 84,
+		borderRadius: 42,
 		backgroundColor: '#fffbeb',
 		justifyContent: 'center',
 		alignItems: 'center',
 		marginBottom: spacing.md,
+		shadowColor: '#f59e0b',
+		shadowOffset: { width: 0, height: 4 },
+		shadowOpacity: 0.1,
+		shadowRadius: 8,
+		elevation: 2,
 	},
 	quizResultPercent: {
-		fontSize: 22,
-		fontWeight: '800',
+		fontSize: 24,
+		fontWeight: '900',
 		color: colors.text,
 		marginBottom: spacing.sm,
 	},
@@ -2117,80 +2171,87 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		backgroundColor: '#10b981',
-		paddingVertical: 8,
-		paddingHorizontal: 16,
-		borderRadius: 12,
+		paddingVertical: 10,
+		paddingHorizontal: 20,
+		borderRadius: 14,
 		marginBottom: spacing.lg,
+		shadowColor: '#10b981',
+		shadowOffset: { width: 0, height: 3 },
+		shadowOpacity: 0.2,
+		shadowRadius: 6,
+		elevation: 3,
 	},
 	quizRewardBadgeText: {
 		color: '#ffffff',
-		fontWeight: '700',
+		fontWeight: '800',
 		fontSize: 13,
 		marginLeft: 6,
 	},
 	quizBackToListBtn: {
 		borderWidth: 1.5,
 		borderColor: colors.accent,
-		borderRadius: 12,
-		paddingVertical: 10,
-		paddingHorizontal: 20,
+		borderRadius: 14,
+		paddingVertical: 12,
+		paddingHorizontal: 22,
 	},
 	quizBackToListBtnText: {
 		color: colors.accent,
-		fontWeight: '700',
+		fontWeight: '800',
 		fontSize: 13,
 	},
 	rewardCard: {
 		width: '47%',
 		backgroundColor: colors.surface,
-		borderRadius: 18,
+		borderRadius: 24,
 		padding: spacing.md,
 		margin: '1.5%',
 		alignItems: 'center',
 		shadowColor: '#000',
 		shadowOffset: { width: 0, height: 2 },
 		shadowOpacity: 0.03,
-		shadowRadius: 5,
+		shadowRadius: 6,
 		elevation: 1,
+		borderWidth: 1,
+		borderColor: '#f1f5f9',
 		position: 'relative',
 	},
 	rewardCardClaimed: {
 		backgroundColor: '#f1f5f9',
 		borderColor: '#cbd5e1',
-		borderWidth: 1,
+		borderWidth: 1.5,
 	},
 	rewardCardCantAfford: {
-		opacity: 0.7,
+		opacity: 0.75,
 	},
 	rewardEmojiContainer: {
-		width: 50,
-		height: 50,
-		borderRadius: 25,
+		width: 54,
+		height: 54,
+		borderRadius: 27,
 		backgroundColor: '#f8fafc',
 		justifyContent: 'center',
 		alignItems: 'center',
 		marginBottom: spacing.sm,
 	},
 	rewardEmoji: {
-		fontSize: 28,
+		fontSize: 30,
 	},
 	rewardTitle: {
 		fontSize: 13,
-		fontWeight: '700',
+		fontWeight: '800',
 		color: colors.text,
 		textAlign: 'center',
 		marginBottom: 4,
 		minHeight: 36,
 	},
 	rewardCost: {
-		fontSize: 12,
+		fontSize: 13,
 		color: colors.accent,
-		fontWeight: '800',
+		fontWeight: '900',
 		marginBottom: spacing.md,
 	},
 	claimButton: {
-		borderRadius: 10,
-		paddingVertical: 8,
+		borderRadius: 12,
+		paddingVertical: 10,
 		width: '100%',
 		alignItems: 'center',
 		justifyContent: 'center',
@@ -2198,6 +2259,11 @@ const styles = StyleSheet.create({
 	},
 	claimButtonEnabled: {
 		backgroundColor: '#10b981',
+		shadowColor: '#10b981',
+		shadowOffset: { width: 0, height: 4 },
+		shadowOpacity: 0.15,
+		shadowRadius: 6,
+		elevation: 2,
 	},
 	claimButtonDisabled: {
 		backgroundColor: '#e2e8f0',
@@ -2207,7 +2273,7 @@ const styles = StyleSheet.create({
 	},
 	claimButtonText: {
 		fontSize: 11,
-		fontWeight: '700',
+		fontWeight: '800',
 	},
 	claimButtonTextEnabled: {
 		color: '#ffffff',
@@ -2224,9 +2290,9 @@ const styles = StyleSheet.create({
 		top: 6,
 		right: 6,
 		backgroundColor: '#ffffff',
-		borderRadius: 10,
-		width: 20,
-		height: 20,
+		borderRadius: 12,
+		width: 22,
+		height: 22,
 		justifyContent: 'center',
 		alignItems: 'center',
 		borderWidth: 1,
@@ -2237,14 +2303,16 @@ const styles = StyleSheet.create({
 	},
 	dayGroupCard: {
 		backgroundColor: colors.surface,
-		borderRadius: 16,
+		borderRadius: 20,
 		marginBottom: spacing.sm,
 		overflow: 'hidden',
 		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 1 },
+		shadowOffset: { width: 0, height: 2 },
 		shadowOpacity: 0.02,
-		shadowRadius: 3,
+		shadowRadius: 4,
 		elevation: 1,
+		borderWidth: 1,
+		borderColor: '#f1f5f9',
 	},
 	dayHeaderRow: {
 		flexDirection: 'row',
@@ -2259,7 +2327,7 @@ const styles = StyleSheet.create({
 	},
 	dayDateText: {
 		fontSize: 13,
-		fontWeight: '700',
+		fontWeight: '800',
 		color: colors.text,
 	},
 	dayHeaderRight: {
@@ -2267,24 +2335,24 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 	},
 	sumPositiveText: {
-		fontSize: 12,
-		fontWeight: '700',
+		fontSize: 11,
+		fontWeight: '800',
 		color: '#137333',
 		marginRight: 6,
 		backgroundColor: '#e6f4ea',
-		paddingHorizontal: 6,
-		paddingVertical: 2,
-		borderRadius: 6,
+		paddingHorizontal: 8,
+		paddingVertical: 3,
+		borderRadius: 8,
 	},
 	sumNegativeText: {
-		fontSize: 12,
-		fontWeight: '700',
+		fontSize: 11,
+		fontWeight: '800',
 		color: '#c5221f',
 		marginRight: 10,
 		backgroundColor: '#fce8e6',
-		paddingHorizontal: 6,
-		paddingVertical: 2,
-		borderRadius: 6,
+		paddingHorizontal: 8,
+		paddingVertical: 3,
+		borderRadius: 8,
 	},
 	dayLogsList: {
 		paddingHorizontal: spacing.md,
@@ -2296,9 +2364,12 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		justifyContent: 'space-between',
 		alignItems: 'center',
-		paddingVertical: 10,
+		paddingVertical: 12,
 		borderBottomWidth: 1,
 		borderBottomColor: '#f1f5f9',
+	},
+	logItemRowLast: {
+		borderBottomWidth: 0,
 	},
 	logLeftCol: {
 		flexDirection: 'row',
@@ -2321,7 +2392,7 @@ const styles = StyleSheet.create({
 	},
 	logTitleText: {
 		fontSize: 12,
-		fontWeight: '600',
+		fontWeight: '700',
 		color: colors.text,
 	},
 	logTimeRow: {
@@ -2336,12 +2407,12 @@ const styles = StyleSheet.create({
 	},
 	logValueText: {
 		fontSize: 12,
-		fontWeight: '700',
+		fontWeight: '800',
 	},
 	emptyHistoryState: {
 		alignItems: 'center',
 		justifyContent: 'center',
-		paddingVertical: 40,
+		paddingVertical: 50,
 	},
 	emptyHistoryText: {
 		marginTop: spacing.md,
@@ -2349,21 +2420,76 @@ const styles = StyleSheet.create({
 		color: colors.muted,
 		textAlign: 'center',
 	},
+	// MODERN PREMIUM BOTTOM APP BAR STYLES
+	bottomAppBarContainer: {
+		position: 'absolute',
+		bottom: 0,
+		left: 0,
+		right: 0,
+		backgroundColor: 'transparent',
+		paddingHorizontal: spacing.md,
+		paddingBottom: Platform.OS === 'ios' ? 24 : 12,
+	},
+	bottomAppBar: {
+		flexDirection: 'row',
+		backgroundColor: '#ffffff',
+		borderRadius: 24,
+		paddingVertical: 8,
+		paddingHorizontal: spacing.sm,
+		shadowColor: '#0f172a',
+		shadowOffset: { width: 0, height: 10 },
+		shadowOpacity: 0.12,
+		shadowRadius: 20,
+		elevation: 10,
+		borderWidth: 1,
+		borderColor: '#e2e8f0',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+	},
+	appBarItem: {
+		flex: 1,
+		alignItems: 'center',
+		justifyContent: 'center',
+		paddingVertical: 6,
+		position: 'relative',
+	},
+	appBarItemActive: {
+		transform: [{ scale: 1.05 }],
+	},
+	appBarItemLabel: {
+		fontSize: 10,
+		fontWeight: '600',
+		color: '#64748b',
+		marginTop: 3,
+	},
+	appBarItemLabelActive: {
+		color: colors.accent,
+		fontWeight: '800',
+	},
+	activeIndicatorDot: {
+		width: 4,
+		height: 4,
+		borderRadius: 2,
+		backgroundColor: colors.accent,
+		position: 'absolute',
+		bottom: -2,
+	},
+	// TOAST STYLES
 	toastContainer: {
 		position: 'absolute',
-		bottom: 30,
+		bottom: 90, // Positioned safely above bottom app bar
 		left: 20,
 		right: 20,
 		backgroundColor: '#10b981',
-		borderRadius: 14,
-		paddingVertical: 12,
-		paddingHorizontal: 16,
+		borderRadius: 16,
+		paddingVertical: 14,
+		paddingHorizontal: 18,
 		flexDirection: 'row',
 		alignItems: 'center',
 		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 4 },
+		shadowOffset: { width: 0, height: 6 },
 		shadowOpacity: 0.15,
-		shadowRadius: 8,
+		shadowRadius: 12,
 		elevation: 5,
 		zIndex: 9999,
 	},
@@ -2375,28 +2501,31 @@ const styles = StyleSheet.create({
 	},
 	toastText: {
 		color: '#ffffff',
-		fontWeight: '700',
+		fontWeight: '800',
 		fontSize: 12,
 		flex: 1,
 	},
+	// MODAL STYLES
 	modalOverlay: {
 		flex: 1,
-		backgroundColor: 'rgba(17, 24, 39, 0.4)',
+		backgroundColor: 'rgba(15, 23, 42, 0.45)',
 		justifyContent: 'center',
 		alignItems: 'center',
 		padding: spacing.md,
 	},
 	modalContent: {
 		backgroundColor: colors.surface,
-		borderRadius: 24,
+		borderRadius: 28,
 		width: '100%',
 		maxWidth: 400,
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 10 },
-		shadowOpacity: 0.1,
-		shadowRadius: 20,
+		shadowColor: '#0f172a',
+		shadowOffset: { width: 0, height: 12 },
+		shadowOpacity: 0.15,
+		shadowRadius: 24,
 		elevation: 10,
 		overflow: 'hidden',
+		borderWidth: 1,
+		borderColor: '#f1f5f9',
 	},
 	modalHeader: {
 		flexDirection: 'row',
@@ -2404,11 +2533,11 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		padding: spacing.md,
 		borderBottomWidth: 1,
-		borderBottomColor: colors.border,
+		borderBottomColor: '#f1f5f9',
 	},
 	modalTitle: {
 		fontSize: 16,
-		fontWeight: '700',
+		fontWeight: '800',
 		color: colors.text,
 	},
 	modalBody: {
@@ -2416,7 +2545,7 @@ const styles = StyleSheet.create({
 	},
 	inputLabel: {
 		fontSize: 12,
-		fontWeight: '600',
+		fontWeight: '700',
 		color: colors.text,
 		marginBottom: 6,
 		marginTop: 8,
@@ -2425,9 +2554,9 @@ const styles = StyleSheet.create({
 		backgroundColor: '#f8fafc',
 		borderWidth: 1.5,
 		borderColor: '#e2e8f0',
-		borderRadius: 12,
+		borderRadius: 14,
 		paddingHorizontal: spacing.md,
-		paddingVertical: 10,
+		paddingVertical: 12,
 		fontSize: 14,
 		color: colors.text,
 		marginBottom: spacing.sm,
@@ -2441,7 +2570,7 @@ const styles = StyleSheet.create({
 		width: '21%',
 		aspectRatio: 1,
 		backgroundColor: '#f1f5f9',
-		borderRadius: 12,
+		borderRadius: 14,
 		justifyContent: 'center',
 		alignItems: 'center',
 		margin: '2%',
@@ -2453,19 +2582,19 @@ const styles = StyleSheet.create({
 		backgroundColor: '#eff6ff',
 	},
 	emojiButtonText: {
-		fontSize: 22,
+		fontSize: 24,
 	},
 	modalFooter: {
 		flexDirection: 'row',
 		padding: spacing.md,
 		borderTopWidth: 1,
-		borderTopColor: colors.border,
+		borderTopColor: '#f1f5f9',
 		justifyContent: 'flex-end',
 	},
 	modalBtn: {
-		paddingVertical: 10,
-		paddingHorizontal: 16,
-		borderRadius: 12,
+		paddingVertical: 12,
+		paddingHorizontal: 18,
+		borderRadius: 14,
 		marginLeft: spacing.sm,
 	},
 	modalBtnCancel: {
@@ -2474,7 +2603,7 @@ const styles = StyleSheet.create({
 	modalBtnCancelText: {
 		color: colors.muted,
 		fontSize: 13,
-		fontWeight: '600',
+		fontWeight: '700',
 	},
 	modalBtnSubmit: {
 		backgroundColor: colors.accent,
@@ -2482,11 +2611,11 @@ const styles = StyleSheet.create({
 	modalBtnSubmitText: {
 		color: '#ffffff',
 		fontSize: 13,
-		fontWeight: '700',
+		fontWeight: '800',
 	},
 	claimConfirmRewardTitle: {
-		fontSize: 16,
-		fontWeight: '700',
+		fontSize: 17,
+		fontWeight: '800',
 		color: colors.text,
 		textAlign: 'center',
 		marginBottom: 6,
