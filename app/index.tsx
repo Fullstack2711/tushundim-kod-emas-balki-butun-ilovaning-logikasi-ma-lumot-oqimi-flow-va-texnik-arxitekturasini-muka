@@ -19,6 +19,7 @@ import { AuthGate } from '@/components/AuthGate';
 import { SignOutButton } from '@/components/SignOutButton';
 import { colors, spacing } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
 import {
 	REPEATABLE_TASKS,
 	UNLOCK_TASKS,
@@ -225,6 +226,30 @@ function KidsPointsApp() {
 
 		return counters;
 	}, [dailyLogsGrouped]);
+
+	// 4b. Pronunciation sound player using Google Translate TTS (highly reliable and free)
+	const playArabicLetterSound = async (title: string) => {
+		try {
+			// Extract Arabic character inside parentheses, e.g. "Alif (ا)" -> "ا"
+			const match = title.match(/\(([^)]+)\)/);
+			const arabicChar = match ? match[1] : title;
+			const speakUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=ar&client=tw-ob&q=${encodeURIComponent(arabicChar)}`;
+
+			if (Platform.OS === 'web') {
+				// Web speech fallback
+				const audio = new (window as any).Audio(speakUrl);
+				audio.play();
+			} else {
+				// Native stream playback
+				const { sound } = await Audio.Sound.createAsync(
+					{ uri: speakUrl },
+					{ shouldPlay: true }
+				);
+			}
+		} catch (err) {
+			console.warn('Ovozni eshitishda xatolik:', err);
+		}
+	};
 
 	// Unified handler for committing transactions (Direct Parent Action, or pending if Child)
 	const handleActionCommit = async (
@@ -1033,6 +1058,16 @@ function KidsPointsApp() {
 							<View style={styles.unlocksGridContainer}>
 								{UNLOCK_TASKS.filter((task) => task.category === oneoffSubTab).map((task) => {
 									const isUnlocked = activeChild.unlocked?.includes(task.id);
+									const isHarfTab = oneoffSubTab === 'harf';
+									
+									// Extract Arabic character, e.g. "Alif (ا)" -> "ا"
+									const arabicSymbol = isHarfTab && task.title.includes('(') 
+										? (task.title.match(/\(([^)]+)\)/)?.[1] || '') 
+										: '';
+									const cleanTitle = isHarfTab && task.title.includes('(')
+										? task.title.split(' ')[0]
+										: task.title;
+
 									return (
 										<Pressable
 											key={task.id}
@@ -1044,12 +1079,33 @@ function KidsPointsApp() {
 											style={[
 												styles.unlockSquareCard,
 												isUnlocked && styles.unlockSquareCardCompleted,
+												isHarfTab && styles.harfSquareCard,
 											]}
 										>
-											<Text style={styles.unlockSquareEmoji}>{task.emoji}</Text>
+											{isHarfTab ? (
+												// Beautiful extra-large Arabic symbol card
+												<View style={styles.harfSymbolContainer}>
+													<Text style={styles.harfSymbolBigText}>{arabicSymbol}</Text>
+													<TouchableOpacity 
+														onPress={(e) => {
+															e.stopPropagation(); // Avoid triggering points
+															playArabicLetterSound(task.title);
+														}}
+														style={styles.volumeIconContainer}
+													>
+														<Ionicons name="volume-high" size={14} color={colors.accent} />
+													</TouchableOpacity>
+												</View>
+											) : (
+												<Text style={styles.unlockSquareEmoji}>{task.emoji}</Text>
+											)}
 											
-											<Text style={[styles.unlockSquareTitle, isUnlocked && styles.unlockSquareTitleCompleted]} numberOfLines={2}>
-												{task.title}
+											<Text style={[
+												styles.unlockSquareTitle, 
+												isUnlocked && styles.unlockSquareTitleCompleted,
+												isHarfTab && styles.harfSquareTitle
+											]} numberOfLines={2}>
+												{isHarfTab ? cleanTitle : task.title}
 											</Text>
 											
 											<Text style={styles.unlockSquarePoints}>+{task.points} ball</Text>
@@ -3262,5 +3318,46 @@ const styles = StyleSheet.create({
 		color: '#ffffff',
 		fontSize: 8,
 		fontWeight: '800',
+	},
+	// ARABIC ALPHABET EXTRA LARGE CARD CUSTOMS
+	harfSquareCard: {
+		minHeight: 165,
+	},
+	harfSymbolContainer: {
+		backgroundColor: '#f1f5f9',
+		borderRadius: 14,
+		width: '100%',
+		height: 55,
+		justifyContent: 'center',
+		alignItems: 'center',
+		marginBottom: 6,
+		position: 'relative',
+		borderWidth: 1,
+		borderColor: '#e2e8f0',
+	},
+	harfSymbolBigText: {
+		fontSize: 28,
+		fontWeight: 'bold',
+		color: colors.text,
+	},
+	volumeIconContainer: {
+		position: 'absolute',
+		bottom: 2,
+		right: 2,
+		backgroundColor: '#ffffff',
+		borderRadius: 8,
+		width: 22,
+		height: 22,
+		justifyContent: 'center',
+		alignItems: 'center',
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 1 },
+		shadowOpacity: 0.1,
+		shadowRadius: 2,
+		elevation: 1,
+	},
+	harfSquareTitle: {
+		fontSize: 11,
+		fontWeight: 'bold',
 	},
 });
