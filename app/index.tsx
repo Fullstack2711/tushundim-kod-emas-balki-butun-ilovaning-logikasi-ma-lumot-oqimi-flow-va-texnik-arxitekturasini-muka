@@ -17,28 +17,7 @@ import { api } from '../convex/_generated/api';
 import { AuthGate } from '@/components/AuthGate';
 import { SignOutButton } from '@/components/SignOutButton';
 import { colors, spacing } from '@/theme';
-import {
-	Plus,
-	Trash2,
-	Calendar,
-	Trophy,
-	Award,
-	BookOpen,
-	AlertTriangle,
-	CheckCircle,
-	Flame,
-	Gift,
-	Star,
-	ChevronDown,
-	ChevronUp,
-	Clock,
-	User,
-	UserPlus,
-	Check,
-	X,
-	ShieldAlert,
-	Sparkles,
-} from 'lucide-react-native';
+import { Ionicons } from '@expo/vector-icons';
 import {
 	REPEATABLE_TASKS,
 	UNLOCK_TASKS,
@@ -570,7 +549,7 @@ function KidsPointsApp() {
 										onPress={() => handleDeleteChild(kid._id, kid.name)}
 										style={styles.deleteKidMiniButton}
 									>
-										<X size={12} color="#ff4d4f" />
+										<Ionicons name="close" size={12} color="#ff4d4f" />
 									</Pressable>
 								)}
 							</Pressable>
@@ -578,7 +557,7 @@ function KidsPointsApp() {
 					})}
 
 					<Pressable onPress={() => setAddChildModalVisible(true)} style={styles.addKidButton}>
-						<UserPlus size={18} color={colors.accent} />
+						<Ionicons name="person-add-outline" size={18} color={colors.accent} />
 						<Text style={styles.addKidButtonText}>Qo’shish</Text>
 					</Pressable>
 				</ScrollView>
@@ -590,7 +569,7 @@ function KidsPointsApp() {
 					<View style={styles.bannerHeader}>
 						<Text style={styles.bannerTitle}>{activeChild.emoji} {activeChild.name} profili</Text>
 						<View style={styles.badge}>
-							<Star size={14} color="#f59e0b" fill="#f59e0b" />
+							<Ionicons name="star" size={14} color="#f59e0b" />
 							<Text style={styles.badgeText}>Faol</Text>
 						</View>
 					</View>
@@ -603,7 +582,7 @@ function KidsPointsApp() {
 								{Math.max(0, activeChild.score)}
 							</Text>
 							<View style={[styles.statBadge, { backgroundColor: '#eff6ff' }]}>
-								<Trophy size={11} color={colors.accent} />
+								<Ionicons name="trophy-outline" size={11} color={colors.accent} />
 								<Text style={[styles.statBadgeText, { color: colors.accent }]}>To’plangan</Text>
 							</View>
 						</View>
@@ -615,7 +594,7 @@ function KidsPointsApp() {
 								+{stats.today}
 							</Text>
 							<View style={[styles.statBadge, { backgroundColor: '#ecfdf5' }]}>
-								<Flame size={11} color="#10b981" />
+								<Ionicons name="flame-outline" size={11} color="#10b981" />
 								<Text style={[styles.statBadgeText, { color: '#10b981' }]}>Bugun</Text>
 							</View>
 						</View>
@@ -627,7 +606,7 @@ function KidsPointsApp() {
 								+{stats.weekly}
 							</Text>
 							<View style={[styles.statBadge, { backgroundColor: '#fffbeb' }]}>
-								<Calendar size={11} color="#f59e0b" />
+								<Ionicons name="calendar-outline" size={11} color="#f59e0b" />
 								<Text style={[styles.statBadgeText, { color: '#f59e0b' }]}>Hafta</Text>
 							</View>
 						</View>
@@ -635,7 +614,7 @@ function KidsPointsApp() {
 				</View>
 			) : (
 				<View style={styles.noChildContainer}>
-					<AlertTriangle size={32} color="#f59e0b" />
+					<Ionicons name="warning-outline" size={32} color="#f59e0b" />
 					<Text style={styles.noChildText}>Iltimos, avval bola profilini yarating!</Text>
 				</View>
 			)}
@@ -646,7 +625,7 @@ function KidsPointsApp() {
 					onPress={() => setActiveTab('tasks')}
 					style={[styles.tabButton, activeTab === 'tasks' && styles.tabButtonActive]}
 				>
-					<Flame size={18} color={activeTab === 'tasks' ? colors.accent : colors.muted} />
+					<Ionicons name="flame" size={18} color={activeTab === 'tasks' ? colors.accent : colors.muted} />
 					<Text style={[styles.tabButtonText, activeTab === 'tasks' && styles.tabButtonTextActive]}>
 						Vazifalar
 					</Text>
@@ -656,7 +635,7 @@ function KidsPointsApp() {
 					onPress={() => setActiveTab('oneoff')}
 					style={[styles.tabButton, activeTab === 'oneoff' && styles.tabButtonActive]}
 				>
-					<Award size={18} color={activeTab === 'oneoff' ? colors.accent : colors.muted} />
+					<Ionicons name="ribbon-outline" size={18} color={activeTab === 'oneoff' ? colors.accent : colors.muted} />
 					<Text style={[styles.tabButtonText, activeTab === 'oneoff' && styles.tabButtonTextActive]}>
 						Darsliklar
 					</Text>
@@ -666,7 +645,7 @@ function KidsPointsApp() {
 					onPress={() => setActiveTab('tests')}
 					style={[styles.tabButton, activeTab === 'tests' && styles.tabButtonActive]}
 				>
-					<BookOpen size={18} color={activeTab === 'tests' ? colors.accent : colors.muted} />
+					<Ionicons name="book-outline" size={18} color={activeTab === 'tests' ? colors.accent : colors.muted} />
 					<Text style={[styles.tabButtonText, activeTab === 'tests' && styles.tabButtonTextActive]}>
 						Testlar
 					</Text>
@@ -676,7 +655,7 @@ function KidsPointsApp() {
 					onPress={() => setActiveTab('rewards')}
 					style={[styles.tabButton, activeTab === 'rewards' && styles.tabButtonActive]}
 				>
-					<Gift size={18} color={activeTab === 'rewards' ? colors.accent : colors.muted} />
+					<Ionicons name="gift-outline" size={18} color={activeTab === 'rewards' ? colors.accent : colors.muted} />
 					<Text style={[styles.tabButtonText, activeTab === 'rewards' && styles.tabButtonTextActive]}>
 						Mukofotlar
 					</Text>
@@ -686,7 +665,7 @@ function KidsPointsApp() {
 					onPress={() => setActiveTab('logs')}
 					style={[styles.tabButton, activeTab === 'logs' && styles.tabButtonActive]}
 				>
-					<Clock size={18} color={activeTab === 'logs' ? colors.accent : colors.muted} />
+					<Ionicons name="time-outline" size={18} color={activeTab === 'logs' ? colors.accent : colors.muted} />
 					<Text style={[styles.tabButtonText, activeTab === 'logs' && styles.tabButtonTextActive]}>
 						Jurnal
 					</Text>
@@ -711,7 +690,7 @@ function KidsPointsApp() {
 									setCustomItemModalVisible(true);
 								}}
 							>
-								<Plus size={16} color="#ffffff" />
+								<Ionicons name="add" size={16} color="#ffffff" />
 								<Text style={styles.addCustomFabText}>Yangi</Text>
 							</TouchableOpacity>
 						</View>
@@ -740,14 +719,14 @@ function KidsPointsApp() {
 													onPress={() => handleDeleteCustomItem(task.id)}
 													style={styles.trashMiniButton}
 												>
-													<Trash2 size={13} color="#99a2b0" />
+													<Ionicons name="trash-outline" size={13} color="#99a2b0" />
 												</TouchableOpacity>
 											)}
 											<TouchableOpacity
 												onPress={() => handleActionCommit(task.id, task.title, task.points)}
 												style={styles.addButton}
 											>
-												<Plus size={16} color="#ffffff" />
+												<Ionicons name="add" size={16} color="#ffffff" />
 												<Text style={styles.addButtonText}>Bajarildi</Text>
 											</TouchableOpacity>
 										</View>
@@ -770,7 +749,7 @@ function KidsPointsApp() {
 									setCustomItemModalVisible(true);
 								}}
 							>
-								<Plus size={16} color="#ffffff" />
+								<Ionicons name="add" size={16} color="#ffffff" />
 								<Text style={styles.addCustomFabText}>Jazo qo’shish</Text>
 							</TouchableOpacity>
 						</View>
@@ -801,7 +780,7 @@ function KidsPointsApp() {
 													onPress={() => handleDeleteCustomItem(penalty.id)}
 													style={styles.trashMiniButton}
 												>
-													<Trash2 size={13} color="#99a2b0" />
+													<Ionicons name="trash-outline" size={13} color="#99a2b0" />
 												</TouchableOpacity>
 											)}
 											<TouchableOpacity
@@ -873,7 +852,7 @@ function KidsPointsApp() {
 										<View style={styles.unlockActionCol}>
 											{isUnlocked ? (
 												<View style={styles.completedBadge}>
-													<Check size={14} color="#10b981" />
+													<Ionicons name="checkmark" size={14} color="#10b981" />
 													<Text style={styles.completedBadgeText}>Olingan</Text>
 												</View>
 											) : (
@@ -1017,7 +996,8 @@ function KidsPointsApp() {
 									// Quiz completed result
 									<View style={styles.quizCompletedBody}>
 										<View style={styles.trophyIconContainer}>
-											<Trophy
+											<Ionicons
+												name="trophy-outline"
 												size={48}
 												color={quizCompletedResult.points > 0 ? '#f59e0b' : '#99a2b0'}
 											/>
@@ -1033,7 +1013,7 @@ function KidsPointsApp() {
 
 										{quizCompletedResult.points > 0 && (
 											<View style={styles.quizRewardBadge}>
-												<Sparkles size={16} color="#ffffff" />
+												<Ionicons name="sparkles-outline" size={16} color="#ffffff" />
 												<Text style={styles.quizRewardBadgeText}>
 													+{quizCompletedResult.points} ball o’tkazildi!
 												</Text>
@@ -1068,7 +1048,7 @@ function KidsPointsApp() {
 									setCustomItemModalVisible(true);
 								}}
 							>
-								<Plus size={16} color="#ffffff" />
+								<Ionicons name="add" size={16} color="#ffffff" />
 								<Text style={styles.addCustomFabText}>Yangi Mukofot</Text>
 							</TouchableOpacity>
 						</View>
@@ -1095,7 +1075,7 @@ function KidsPointsApp() {
 
 										{isClaimed ? (
 											<View style={[styles.claimButton, styles.claimedButtonState]}>
-												<Check size={14} color="#596579" />
+												<Ionicons name="checkmark" size={14} color="#596579" />
 												<Text style={styles.claimedButtonText}>Olingan ✅</Text>
 											</View>
 										) : (
@@ -1123,7 +1103,7 @@ function KidsPointsApp() {
 												onPress={() => handleDeleteCustomItem(reward.id)}
 												style={styles.deleteRewardMiniButton}
 											>
-												<Trash2 size={12} color="#ff4d4f" />
+												<Ionicons name="trash-outline" size={12} color="#ff4d4f" />
 											</TouchableOpacity>
 										)}
 									</View>
@@ -1151,7 +1131,7 @@ function KidsPointsApp() {
 												style={styles.dayHeaderRow}
 											>
 												<View style={styles.dayHeaderLeft}>
-													<Calendar size={16} color={colors.muted} style={{ marginRight: 6 }} />
+													<Ionicons name="calendar-outline" size={16} color={colors.muted} style={{ marginRight: 6 }} />
 													<Text style={styles.dayDateText}>
 														{formatHeaderDate(day.dateStr)}
 													</Text>
@@ -1167,9 +1147,9 @@ function KidsPointsApp() {
 													)}
 
 													{isExpanded ? (
-														<ChevronUp size={16} color={colors.muted} />
+														<Ionicons name="chevron-up-outline" size={16} color={colors.muted} />
 													) : (
-														<ChevronDown size={16} color={colors.muted} />
+														<Ionicons name="chevron-down-outline" size={16} color={colors.muted} />
 													)}
 												</View>
 											</Pressable>
@@ -1211,7 +1191,7 @@ function KidsPointsApp() {
 																	<View>
 																		<Text style={styles.logTitleText}>{log.title}</Text>
 																		<View style={styles.logTimeRow}>
-																			<Clock size={10} color={colors.muted} />
+																			<Ionicons name="time-outline" size={10} color={colors.muted} />
 																			<Text style={styles.logTimeText}>{logTime}</Text>
 																		</View>
 																	</View>
@@ -1236,7 +1216,7 @@ function KidsPointsApp() {
 							</View>
 						) : (
 							<View style={styles.emptyHistoryState}>
-								<Clock size={40} color="#cbd5e1" />
+								<Ionicons name="time-outline" size={40} color="#cbd5e1" />
 								<Text style={styles.emptyHistoryText}>
 									Hali hech qanday harakatlar tarixi mavjud emas.
 								</Text>
@@ -1255,7 +1235,7 @@ function KidsPointsApp() {
 						toast.type === 'info' && styles.toastInfo,
 					]}
 				>
-					<Sparkles size={16} color="#ffffff" style={{ marginRight: spacing.sm }} />
+					<Ionicons name="sparkles-outline" size={16} color="#ffffff" style={{ marginRight: spacing.sm }} />
 					<Text style={styles.toastText}>{toast.message}</Text>
 				</View>
 			)}
@@ -1272,7 +1252,7 @@ function KidsPointsApp() {
 						<View style={styles.modalHeader}>
 							<Text style={styles.modalTitle}>Yangi bola qo’shish</Text>
 							<TouchableOpacity onPress={() => setAddChildModalVisible(false)}>
-								<X size={20} color={colors.muted} />
+								<Ionicons name="close" size={20} color={colors.muted} />
 							</TouchableOpacity>
 						</View>
 
@@ -1341,7 +1321,7 @@ function KidsPointsApp() {
 										: 'Yangi Mukofot Qo’shish'}
 							</Text>
 							<TouchableOpacity onPress={() => setCustomItemModalVisible(false)}>
-								<X size={20} color={colors.muted} />
+								<Ionicons name="close" size={20} color={colors.muted} />
 							</TouchableOpacity>
 						</View>
 
@@ -1438,7 +1418,7 @@ function KidsPointsApp() {
 						<View style={styles.modalHeader}>
 							<Text style={styles.modalTitle}>Mukofotni sotib olish</Text>
 							<TouchableOpacity onPress={() => setClaimConfirmVisible(false)}>
-								<X size={20} color={colors.muted} />
+								<Ionicons name="close" size={20} color={colors.muted} />
 							</TouchableOpacity>
 						</View>
 
