@@ -78,7 +78,8 @@ function updateWranglerJsonc() {
 
 function runSetupCommands() {
     const commands = [
-    "bun add lucide-react-native"
+    "bun add lucide-react-native",
+    "bun add expo-av"
 ];
     
     if (commands.length === 0) {
