@@ -46,7 +46,25 @@ function KidsPointsApp() {
 	const addCustomItemMutation = useMutation(api.kids.addCustomItem);
 	const deleteCustomItemMutation = useMutation(api.kids.deleteCustomItem);
 
-	// 2. State Management
+	// Parent Settings (PIN code, default "1234") and Approval requests queue
+	const parentSettings = useQuery(api.kids.getParentSettings);
+	const updatePinMutation = useMutation(api.kids.updatePIN);
+	const pendingRequests = useQuery(api.kids.listPendingRequests);
+	const createRequestMutation = useMutation(api.kids.createPendingRequest);
+	const approveRequestMutation = useMutation(api.kids.approveRequest);
+	const rejectRequestMutation = useMutation(api.kids.rejectRequest);
+
+	// 2. Role-Based Access Control State
+	const [currentRole, setCurrentRole] = useState<'parent' | 'child'>('child'); // Safely default to Child mode!
+	const [pinModalVisible, setPinModalVisible] = useState(false);
+	const [enteredPin, setEnteredPin] = useState('');
+	const [pinError, setPinError] = useState<string | null>(null);
+
+	// Settings modal to change PIN
+	const [settingsModalVisible, setSettingsModalVisible] = useState(false);
+	const [newPinValue, setNewPinValue] = useState('');
+
+	// Selected Child state
 	const [activeChildId, setActiveChildId] = useState<string | null>(null);
 	const [activeTab, setActiveTab] = useState<'tasks' | 'oneoff' | 'tests' | 'rewards' | 'logs'>('tasks');
 
@@ -208,7 +226,7 @@ function KidsPointsApp() {
 		return counters;
 	}, [dailyLogsGrouped]);
 
-	// Unified handler for committing transactions
+	// Unified handler for committing transactions (Direct Parent Action, or pending if Child)
 	const handleActionCommit = async (
 		entryId: string,
 		title: string,
@@ -221,6 +239,31 @@ function KidsPointsApp() {
 			return;
 		}
 
+		// ROLE GUARD: If currently in Child Mode, do NOT award points directly! Instead, create a pending request (Section 6)
+		if (currentRole === 'child') {
+			try {
+				const type = isClaim ? 'reward' : isUnlock ? 'unlock' : 'task';
+				const res = await createRequestMutation({
+					childId: activeChild._id,
+					type,
+					entryId,
+					title,
+					value,
+					emoji: isClaim ? '🎁' : isUnlock ? '📚' : '✨',
+				});
+
+				if (res.success) {
+					showToast(res.message || 'So’rovingiz muvaffaqiyatli yuborildi! ⏳', 'info');
+				} else {
+					showToast(res.message || 'Xatolik', 'error');
+				}
+			} catch (err: any) {
+				showToast(err.message || 'So’rov jo’natib bo’lmadi', 'error');
+			}
+			return;
+		}
+
+		// PARENT MODE: Award/Deduct points directly (Section 4)
 		try {
 			const res = await recordActionMutation({
 				childId: activeChild._id as any,
@@ -240,6 +283,67 @@ function KidsPointsApp() {
 		} catch (err: any) {
 			console.error(err);
 			showToast(err.message || 'Tranzaksiya muvaffaqiyatsiz bo’ldi', 'error');
+		}
+	};
+
+	// Parent Unlock / Security verification (Section 5)
+	const handleVerifyPin = () => {
+		if (!parentSettings) return;
+
+		if (enteredPin === parentSettings.pin) {
+			setCurrentRole('parent');
+			setPinModalVisible(false);
+			setEnteredPin('');
+			setPinError(null);
+			showToast('Ota-ona rejimi yoqildi! 🔓', 'success');
+		} else {
+			setPinError('Xato PIN-kod! Iltimos qayta urinib ko’ring.');
+			setEnteredPin('');
+		}
+	};
+
+	// Save new PIN (Section 5)
+	const handleSaveNewPin = async () => {
+		if (newPinValue.length !== 4 || isNaN(parseInt(newPinValue, 10))) {
+			showToast('PIN-kod ro’ppa-rost 4 xonali raqam bo’lishi shart!', 'error');
+			return;
+		}
+
+		try {
+			await updatePinMutation({ newPin: newPinValue });
+			showToast('Xavfsizlik PIN-kodi yangilandi! 🛡️', 'success');
+			setNewPinValue('');
+			setSettingsModalVisible(false);
+		} catch (err: any) {
+			showToast(err.message || 'PIN yangilashda xatolik', 'error');
+		}
+	};
+
+	// Child Requests Approval Handlers (Section 6)
+	const handleApproveRequest = async (requestId: string) => {
+		try {
+			const res = await approveRequestMutation({
+				requestId: requestId as any,
+				dateStr: getLocalDateString(),
+			});
+			if (res.success) {
+				showToast(res.message || 'Tasdiqlandi! 👍', 'success');
+			} else {
+				showToast(res.message || 'Xatolik', 'error');
+			}
+		} catch (err: any) {
+			showToast(err.message || 'Xatolik yuz berdi', 'error');
+		}
+	};
+
+	const handleRejectRequest = async (requestId: string) => {
+		try {
+			const res = await rejectRequestMutation({ requestId: requestId as any });
+			if (res.success) {
+				showToast(res.message || 'Rad etildi! ❌', 'error');
+			}
+		} catch (err: any) {
+			showToast('Rad etib bo’lmadi', 'error');
 		}
 	};
 
@@ -268,6 +372,12 @@ function KidsPointsApp() {
 
 	// Delete child profile
 	const handleDeleteChild = async (childId: string, name: string) => {
+		// Only parent role can delete profiles
+		if (currentRole !== 'parent') {
+			showToast('Faqat ota-ona bolalarni o’chira oladi!', 'error');
+			return;
+		}
+
 		try {
 			await deleteChildMutation({ childId: childId as any });
 			showToast(`${name} profili muvaffaqiyatli o’chirildi`);
@@ -339,6 +449,13 @@ function KidsPointsApp() {
 			return;
 		}
 
+		// In Child Mode, ask parent first (creates pending request)
+		if (currentRole === 'child') {
+			handleActionCommit(reward.id, `Sotib olmoqchi: ${reward.title}`, -reward.cost, false, true);
+			return;
+		}
+
+		// In Parent Mode, confirm and redeem directly
 		setSelectedReward(reward);
 		setClaimConfirmVisible(true);
 	};
@@ -386,10 +503,6 @@ function KidsPointsApp() {
 			setCurrentQuestionIndex(nextIndex);
 			setSelectedOptionIndex(null);
 		} else {
-			// Quiz finished, compute points as per Section 9:
-			// - 100% correct = +100 points
-			// - 80% to 99% correct = +25 points
-			// - < 80% correct = 0 points
 			const finalCorrect = isCorrect ? correctAnswersCount + 1 : correctAnswersCount;
 			const totalQ = selectedQuizTopic.questions.length;
 			const percentage = (finalCorrect / totalQ) * 100;
@@ -415,6 +528,7 @@ function KidsPointsApp() {
 			});
 
 			if (pointsAwarded > 0 && activeChild) {
+				// Tests are directly awarded to the child after solving!
 				handleActionCommit(
 					`test-${selectedQuizTopic.id}-${Date.now()}`,
 					`Test: ${selectedQuizTopic.title} (${Math.round(percentage)}%)`,
@@ -500,6 +614,12 @@ function KidsPointsApp() {
 		return list;
 	}, [customItems]);
 
+	// Filter requests for the currently selected child
+	const activeChildRequests = useMemo(() => {
+		if (!pendingRequests || !activeChild) return [];
+		return pendingRequests.filter((r) => r.childId === activeChild._id);
+	}, [pendingRequests, activeChild]);
+
 	// Loading placeholder
 	if (children === undefined) {
 		return (
@@ -521,6 +641,66 @@ function KidsPointsApp() {
 				}}
 			/>
 
+			{/* ROLE BAR HEADER STATUS (Section 4 & 5) */}
+			<View style={styles.roleHeaderBar}>
+				<View style={styles.roleIndicator}>
+					<View
+						style={[
+							styles.roleDotIndicator,
+							{ backgroundColor: currentRole === 'parent' ? '#10b981' : '#f59e0b' },
+						]}
+					/>
+					<Text style={styles.roleHeaderLabel}>
+						Hozirgi rejim:{' '}
+						<Text style={{ fontWeight: '800' }}>
+							{currentRole === 'parent' ? 'Ota-ona 👨‍👩‍👧' : 'Farzand 🧒'}
+						</Text>
+					</Text>
+				</View>
+
+				<View style={styles.roleActionButtons}>
+					{currentRole === 'parent' ? (
+						<>
+							<TouchableOpacity
+								onPress={() => setSettingsModalVisible(true)}
+								style={[styles.roleActionButton, { backgroundColor: '#f1f5f9' }]}
+							>
+								<Ionicons name="settings-outline" size={16} color={colors.text} />
+							</TouchableOpacity>
+							<TouchableOpacity
+								onPress={() => {
+									setCurrentRole('child');
+									showToast('Ota-ona rejimi qulflandi! 🔒', 'info');
+								}}
+								style={[styles.roleActionButton, styles.roleActionButtonLock]}
+							>
+								<Ionicons name="lock-closed" size={14} color="#ffffff" />
+								<Text style={styles.roleActionButtonLockText}>Qulflash</Text>
+							</TouchableOpacity>
+						</>
+					) : (
+						<TouchableOpacity
+							onPress={() => setPinModalVisible(true)}
+							style={[styles.roleActionButton, styles.roleActionButtonUnlock]}
+						>
+							<Ionicons name="key" size={14} color="#ffffff" />
+							<Text style={styles.roleActionButtonUnlockText}>Ota-ona rejimi</Text>
+						</TouchableOpacity>
+					)}
+				</View>
+			</View>
+
+			{/* Live Pending Requests Indicator Notification (Section 6) */}
+			{currentRole === 'parent' && pendingRequests && pendingRequests.length > 0 && (
+				<View style={styles.pendingAlertBanner}>
+					<Ionicons name="alert-circle" size={18} color="#b45309" />
+					<Text style={styles.pendingAlertText}>
+						Faol so’rovlar: jami{' '}
+						<Text style={{ fontWeight: '800' }}>{pendingRequests.length} ta</Text> kutilayotgan amal tasdiqlanishni kutmoqda!
+					</Text>
+				</View>
+			)}
+
 			{/* Main Content scrollable container, leaving room for floating bottom app bar */}
 			<View style={styles.mainContentWrapper}>
 				<ScrollView style={styles.scrollContent} contentContainerStyle={styles.scrollContentInner}>
@@ -534,7 +714,6 @@ function KidsPointsApp() {
 										key={kid._id}
 										onPress={() => {
 											setActiveChildId(kid._id);
-											// reset quiz when changing child
 											quitQuiz();
 										}}
 										style={[styles.kidCard, isActive && styles.kidCardActive]}
@@ -548,7 +727,7 @@ function KidsPointsApp() {
 												★ {kid.score} ball
 											</Text>
 										</View>
-										{isActive && (
+										{isActive && currentRole === 'parent' && (
 											<Pressable
 												onPress={() => handleDeleteChild(kid._id, kid.name)}
 												style={styles.deleteKidMiniButton}
@@ -560,10 +739,12 @@ function KidsPointsApp() {
 								);
 							})}
 
-							<Pressable onPress={() => setAddChildModalVisible(true)} style={styles.addKidButton}>
-								<Ionicons name="person-add-outline" size={18} color={colors.accent} />
-								<Text style={styles.addKidButtonText}>Qo’shish</Text>
-							</Pressable>
+							{currentRole === 'parent' && (
+								<Pressable onPress={() => setAddChildModalVisible(true)} style={styles.addKidButton}>
+									<Ionicons name="person-add-outline" size={18} color={colors.accent} />
+									<Text style={styles.addKidButtonText}>Qo’shish</Text>
+								</Pressable>
+							)}
 						</ScrollView>
 					</View>
 
@@ -619,7 +800,51 @@ function KidsPointsApp() {
 					) : (
 						<View style={styles.noChildContainer}>
 							<Ionicons name="warning-outline" size={32} color="#f59e0b" />
-							<Text style={styles.noChildText}>Iltimos, avval bola profilini yarating!</Text>
+							<Text style={styles.noChildText}>Iltimos, ota-ona bo’limida bola yarating!</Text>
+						</View>
+					)}
+
+					{/* PARENT APPROVAL QUEUE MODULE (Section 6) */}
+					{currentRole === 'parent' && activeChild && activeChildRequests.length > 0 && (
+						<View style={styles.approvalSectionContainer}>
+							<View style={styles.approvalHeaderRow}>
+								<Ionicons name="checkbox-outline" size={20} color={colors.accent} />
+								<Text style={styles.approvalTitleText}>
+									{activeChild.name}dan kelgan so’rovlar ({activeChildRequests.length} ta)
+								</Text>
+							</View>
+
+							{activeChildRequests.map((req) => {
+								const isReward = req.type === 'reward';
+								return (
+									<View key={req._id} style={styles.approvalCard}>
+										<View style={styles.approvalCardLeft}>
+											<Text style={styles.approvalCardEmoji}>{req.emoji}</Text>
+											<View>
+												<Text style={styles.approvalCardTitle}>{req.title}</Text>
+												<Text style={[styles.approvalCardPoints, { color: isReward ? '#ef4444' : '#10b981' }]}>
+													{isReward ? `Cost: -${req.value}` : `Points: +${req.value}`} ball
+												</Text>
+											</View>
+										</View>
+
+										<View style={styles.approvalCardRight}>
+											<TouchableOpacity
+												onPress={() => handleRejectRequest(req._id)}
+												style={[styles.approvalBtn, styles.approvalBtnReject]}
+											>
+												<Ionicons name="close" size={18} color="#ef4444" />
+											</TouchableOpacity>
+											<TouchableOpacity
+												onPress={() => handleApproveRequest(req._id)}
+												style={[styles.approvalBtn, styles.approvalBtnApprove]}
+											>
+												<Ionicons name="checkmark" size={18} color="#10b981" />
+											</TouchableOpacity>
+										</View>
+									</View>
+								);
+							})}
 						</View>
 					)}
 
@@ -630,19 +855,25 @@ function KidsPointsApp() {
 							<View style={styles.sectionHeaderRow}>
 								<View>
 									<Text style={styles.sectionTitle}>Kunlik Amallar va Vazifalar</Text>
-									<Text style={styles.sectionSubtitle}>Ball qo’shadigan va ayiradigan harakatlar</Text>
+									<Text style={styles.sectionSubtitle}>
+										{currentRole === 'parent'
+											? 'Bolaga ball berish yoki ayirish harakatlari'
+											: 'Amalni bajarganingizdan so’ng ball so’rang'}
+									</Text>
 								</View>
-								<TouchableOpacity
-									style={styles.addCustomFab}
-									onPress={() => {
-										setCustomItemType('task');
-										setCustomEmoji('✍️');
-										setCustomItemModalVisible(true);
-									}}
-								>
-									<Ionicons name="add" size={16} color="#ffffff" />
-									<Text style={styles.addCustomFabText}>Yangi</Text>
-								</TouchableOpacity>
+								{currentRole === 'parent' && (
+									<TouchableOpacity
+										style={styles.addCustomFab}
+										onPress={() => {
+											setCustomItemType('task');
+											setCustomEmoji('✍️');
+											setCustomItemModalVisible(true);
+										}}
+									>
+										<Ionicons name="add" size={16} color="#ffffff" />
+										<Text style={styles.addCustomFabText}>Yangi</Text>
+									</TouchableOpacity>
+								)}
 							</View>
 
 							{/* Repeatable chores list */}
@@ -664,7 +895,7 @@ function KidsPointsApp() {
 											<Text style={styles.taskPoints}>+{task.points} ball</Text>
 
 											<View style={styles.cardActionRow}>
-												{'isCustom' in task && (
+												{currentRole === 'parent' && 'isCustom' in task && (
 													<TouchableOpacity
 														onPress={() => handleDeleteCustomItem(task.id)}
 														style={styles.trashMiniButton}
@@ -674,10 +905,17 @@ function KidsPointsApp() {
 												)}
 												<TouchableOpacity
 													onPress={() => handleActionCommit(task.id, task.title, task.points)}
-													style={styles.addButton}
+													style={[styles.addButton, currentRole === 'child' && styles.requestButtonColor]}
 												>
-													<Ionicons name="add" size={16} color="#ffffff" />
-													<Text style={styles.addButtonText}>Bajarildi</Text>
+													<Ionicons
+														name={currentRole === 'parent' ? 'add' : 'paper-plane-outline'}
+														size={14}
+														color="#ffffff"
+														style={{ marginRight: 2 }}
+													/>
+													<Text style={styles.addButtonText}>
+														{currentRole === 'parent' ? 'Bajarildi' : 'So’rash'}
+													</Text>
 												</TouchableOpacity>
 											</View>
 										</View>
@@ -685,72 +923,87 @@ function KidsPointsApp() {
 								})}
 							</View>
 
-							{/* Penalties List */}
+							{/* Penalties List - ONLY MANAGED/RECORDED BY PARENT ROLE (Section 2) */}
 							<View style={[styles.sectionHeaderRow, { marginTop: spacing.xl }]}>
 								<View>
 									<Text style={styles.subCategoryTitle}>⚠️ Qoidabuzarlik va Jazolar</Text>
-									<Text style={styles.sectionSubtitle}>Noto’g’ri ishlar uchun ball ayiriladi</Text>
+									<Text style={styles.sectionSubtitle}>Noto’g’ri ishlar uchun ball ota-ona tomonidan ayiriladi</Text>
 								</View>
-								<TouchableOpacity
-									style={[styles.addCustomFab, { backgroundColor: '#ef4444' }]}
-									onPress={() => {
-										setCustomItemType('penalty');
-										setCustomEmoji('⚠️');
-										setCustomItemModalVisible(true);
-									}}
-								>
-									<Ionicons name="add" size={16} color="#ffffff" />
-									<Text style={styles.addCustomFabText}>Jazo qo’shish</Text>
-								</TouchableOpacity>
+								{currentRole === 'parent' && (
+									<TouchableOpacity
+										style={[styles.addCustomFab, { backgroundColor: '#ef4444' }]}
+										onPress={() => {
+											setCustomItemType('penalty');
+											setCustomEmoji('⚠️');
+											setCustomItemModalVisible(true);
+										}}
+									>
+										<Ionicons name="add" size={16} color="#ffffff" />
+										<Text style={styles.addCustomFabText}>Jazo qo’shish</Text>
+									</TouchableOpacity>
+								)}
 							</View>
 
-							<View style={styles.gridContainer}>
-								{combinedPenalties.map((penalty) => {
-									const todayCount = repeatableCounters[penalty.id] || 0;
-									return (
-										<View key={penalty.id} style={[styles.taskCard, styles.penaltyCard]}>
-											<View style={styles.taskHeader}>
-												<Text style={styles.taskEmoji}>{penalty.emoji}</Text>
-												{todayCount > 0 && (
-													<View style={[styles.counterBadge, { backgroundColor: '#fee2e2' }]}>
-														<Text style={[styles.counterBadgeText, { color: '#ef4444' }]}>
-															{todayCount} marta
-														</Text>
-													</View>
-												)}
-											</View>
-											<Text style={[styles.taskTitle, styles.penaltyTitle]}>{penalty.title}</Text>
-											<Text style={[styles.taskPoints, { color: '#ef4444' }]}>
-												{penalty.points} ball
-											</Text>
+							{currentRole === 'parent' ? (
+								<View style={styles.gridContainer}>
+									{combinedPenalties.map((penalty) => {
+										const todayCount = repeatableCounters[penalty.id] || 0;
+										return (
+											<View key={penalty.id} style={[styles.taskCard, styles.penaltyCard]}>
+												<View style={styles.taskHeader}>
+													<Text style={styles.taskEmoji}>{penalty.emoji}</Text>
+													{todayCount > 0 && (
+														<View style={[styles.counterBadge, { backgroundColor: '#fee2e2' }]}>
+															<Text style={[styles.counterBadgeText, { color: '#ef4444' }]}>
+																{todayCount} marta
+															</Text>
+														</View>
+													)}
+												</View>
+												<Text style={[styles.taskTitle, styles.penaltyTitle]}>{penalty.title}</Text>
+												<Text style={[styles.taskPoints, { color: '#ef4444' }]}>
+													{penalty.points} ball
+												</Text>
 
-											<View style={styles.cardActionRow}>
-												{'isCustom' in penalty && (
+												<View style={styles.cardActionRow}>
+													{'isCustom' in penalty && (
+														<TouchableOpacity
+															onPress={() => handleDeleteCustomItem(penalty.id)}
+															style={styles.trashMiniButton}
+														>
+															<Ionicons name="trash-outline" size={13} color="#99a2b0" />
+														</TouchableOpacity>
+													)}
 													<TouchableOpacity
-														onPress={() => handleDeleteCustomItem(penalty.id)}
-														style={styles.trashMiniButton}
+														onPress={() => handleActionCommit(penalty.id, penalty.title, penalty.points)}
+														style={[styles.addButton, { backgroundColor: '#ef4444' }]}
 													>
-														<Ionicons name="trash-outline" size={13} color="#99a2b0" />
+														<Text style={styles.addButtonText}>Qayd qilish</Text>
 													</TouchableOpacity>
-												)}
-												<TouchableOpacity
-													onPress={() => handleActionCommit(penalty.id, penalty.title, penalty.points)}
-													style={[styles.addButton, { backgroundColor: '#ef4444' }]}
-												>
-													<Text style={styles.addButtonText}>Qayd qilish</Text>
-												</TouchableOpacity>
+												</View>
 											</View>
-										</View>
-									);
-								})}
-							</View>
+										);
+									})}
+								</View>
+							) : (
+								<View style={styles.disabledPenaltiesBlock}>
+									<Ionicons name="lock-closed" size={24} color="#94a3b8" />
+									<Text style={styles.disabledPenaltiesText}>
+										Qoidabuzarlik va jazo choralari faqat Ota-ona rejimi 🔑 orqali qayd etiladi.
+									</Text>
+								</View>
+							)}
 						</View>
 					)}
 
 					{activeChild && activeTab === 'oneoff' && (
 						<View style={styles.section}>
 							<Text style={styles.sectionTitle}>Bir martalik darsliklar</Text>
-							<Text style={styles.sectionSubtitle}>Faqat bir marta o’rganib ko’p ball to’plang</Text>
+							<Text style={styles.sectionSubtitle}>
+								{currentRole === 'parent'
+									? 'Taqdim qilingan darslarni o’zlashtirishni tekshiring'
+									: 'Darsni o’rganib bo’lgach, ota-onangizga so’rov jo’nating'}
+							</Text>
 
 							{/* Sub tabs configuration */}
 							<View style={styles.subTabsContainer}>
@@ -810,9 +1063,11 @@ function KidsPointsApp() {
 														onPress={() =>
 															handleActionCommit(task.id, `O’rganildi: ${task.title}`, task.points, true)
 														}
-														style={styles.unlockButton}
+														style={[styles.unlockButton, currentRole === 'child' && styles.requestButtonColor]}
 													>
-														<Text style={styles.unlockButtonText}>+{task.points}</Text>
+														<Text style={styles.unlockButtonText}>
+															{currentRole === 'parent' ? `+${task.points}` : 'So’rash'}
+														</Text>
 													</TouchableOpacity>
 												)}
 											</View>
@@ -990,17 +1245,19 @@ function KidsPointsApp() {
 									<Text style={styles.sectionTitle}>Mukofotlar Do’koni</Text>
 									<Text style={styles.sectionSubtitle}>Ballarni ajoyib mukofotlarga almashtiring</Text>
 								</View>
-								<TouchableOpacity
-									style={[styles.addCustomFab, { backgroundColor: '#10b981' }]}
-									onPress={() => {
-										setCustomItemType('reward');
-										setCustomEmoji('🎁');
-										setCustomItemModalVisible(true);
-									}}
-								>
-									<Ionicons name="add" size={16} color="#ffffff" />
-									<Text style={styles.addCustomFabText}>Yangi Mukofot</Text>
-								</TouchableOpacity>
+								{currentRole === 'parent' && (
+									<TouchableOpacity
+										style={[styles.addCustomFab, { backgroundColor: '#10b981' }]}
+										onPress={() => {
+											setCustomItemType('reward');
+											setCustomEmoji('🎁');
+											setCustomItemModalVisible(true);
+										}}
+									>
+										<Ionicons name="add" size={16} color="#ffffff" />
+										<Text style={styles.addCustomFabText}>Yangi Mukofot</Text>
+									</TouchableOpacity>
+								)}
 							</View>
 
 							<View style={styles.gridContainer}>
@@ -1035,6 +1292,7 @@ function KidsPointsApp() {
 													style={[
 														styles.claimButton,
 														canAfford ? styles.claimButtonEnabled : styles.claimButtonDisabled,
+														currentRole === 'child' && canAfford && styles.requestButtonColor,
 													]}
 												>
 													<Text
@@ -1043,12 +1301,12 @@ function KidsPointsApp() {
 															canAfford ? styles.claimButtonTextEnabled : styles.claimButtonTextDisabled,
 														]}
 													>
-														Sotib Olish
+														{currentRole === 'parent' ? 'Sotib Olish' : 'So’rov yuborish'}
 													</Text>
 												</TouchableOpacity>
 											)}
 
-											{'isCustom' in reward && (
+											{currentRole === 'parent' && 'isCustom' in reward && (
 												<TouchableOpacity
 													onPress={() => handleDeleteCustomItem(reward.id)}
 													style={styles.deleteRewardMiniButton}
@@ -1270,6 +1528,118 @@ function KidsPointsApp() {
 					<Text style={styles.toastText}>{toast.message}</Text>
 				</View>
 			)}
+
+			{/* MODAL: VERIFY PARENT PROTECTION PIN (Section 5) */}
+			<Modal
+				animationType="fade"
+				transparent={true}
+				visible={pinModalVisible}
+				onRequestClose={() => setPinModalVisible(false)}
+			>
+				<View style={styles.modalOverlay}>
+					<View style={[styles.modalContent, { maxWidth: 320 }]}>
+						<View style={styles.modalHeader}>
+							<Text style={styles.modalTitle}>Ota-ona xavfsizlik PIN-kodi</Text>
+							<TouchableOpacity onPress={() => setPinModalVisible(false)}>
+								<Ionicons name="close" size={20} color={colors.muted} />
+							</TouchableOpacity>
+						</View>
+
+						<View style={styles.modalBody}>
+							<Text style={styles.pinInstructions}>
+								Bolalar ruxsatsiz ball qo’shmasligi uchun 4 xonali PIN-kodni kiriting. (Zavod PIN: <Text style={{ fontWeight: '800' }}>1234</Text>)
+							</Text>
+
+							<TextInput
+								style={styles.pinInput}
+								placeholder="****"
+								keyboardType="numeric"
+								maxLength={4}
+								secureTextEntry
+								value={enteredPin}
+								onChangeText={(val) => {
+									setEnteredPin(val);
+									setPinError(null);
+								}}
+							/>
+
+							{pinError && <Text style={styles.pinErrorText}>{pinError}</Text>}
+						</View>
+
+						<View style={styles.modalFooter}>
+							<TouchableOpacity
+								style={[styles.modalBtn, styles.modalBtnCancel]}
+								onPress={() => {
+									setPinModalVisible(false);
+									setEnteredPin('');
+									setPinError(null);
+								}}
+							>
+								<Text style={styles.modalBtnCancelText}>Bekor qilish</Text>
+							</TouchableOpacity>
+							<TouchableOpacity
+								style={[styles.modalBtn, styles.modalBtnSubmit]}
+								onPress={handleVerifyPin}
+							>
+								<Text style={styles.modalBtnSubmitText}>Kirish 🔓</Text>
+							</TouchableOpacity>
+						</View>
+					</View>
+				</View>
+			</Modal>
+
+			{/* MODAL: CHANGE PIN SETTINGS (Section 5) */}
+			<Modal
+				animationType="fade"
+				transparent={true}
+				visible={settingsModalVisible}
+				onRequestClose={() => setSettingsModalVisible(false)}
+			>
+				<View style={styles.modalOverlay}>
+					<View style={[styles.modalContent, { maxWidth: 320 }]}>
+						<View style={styles.modalHeader}>
+							<Text style={styles.modalTitle}>PIN-kodni almashtirish</Text>
+							<TouchableOpacity onPress={() => setSettingsModalVisible(false)}>
+								<Ionicons name="close" size={20} color={colors.muted} />
+							</TouchableOpacity>
+						</View>
+
+						<View style={styles.modalBody}>
+							<Text style={styles.pinInstructions}>
+								Ota-ona rejimini himoya qilish uchun yangi 4 xonali raqamli kod kiriting:
+							</Text>
+
+							<TextInput
+								style={styles.pinInput}
+								placeholder="Yangi PIN"
+								keyboardType="numeric"
+								maxLength={4}
+								secureTextEntry
+								value={newPinValue}
+								onChangeText={setNewPinValue}
+							/>
+						</View>
+
+						<View style={styles.modalFooter}>
+							<TouchableOpacity
+								style={[styles.modalBtn, styles.modalBtnCancel]}
+								onPress={() => {
+									setSettingsModalVisible(false);
+									setNewPinValue('');
+								}}
+							>
+								<Text style={styles.modalBtnCancelText}>Bekor qilish</Text>
+							</TouchableOpacity>
+							<TouchableOpacity
+								style={[styles.modalBtn, styles.modalBtnSubmit, { backgroundColor: '#10b981' }]}
+								onPress={handleSaveNewPin}
+							>
+								<Text style={styles.modalBtnSubmitText}>Saqlash 🛡️</Text>
+							</TouchableOpacity>
+						</View>
+					</View>
+				</View>
+			</Modal>
 
 			{/* MODAL: ADD CHILD */}
 			<Modal
@@ -1507,6 +1877,147 @@ const styles = StyleSheet.create({
 		fontSize: 15,
 		color: colors.muted,
 	},
+	// ROLE PROTECTION BAR HEADER
+	roleHeaderBar: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+		backgroundColor: '#ffffff',
+		paddingHorizontal: spacing.md,
+		paddingVertical: 10,
+		borderBottomWidth: 1,
+		borderBottomColor: '#e2e8f0',
+	},
+	roleIndicator: {
+		flexDirection: 'row',
+		alignItems: 'center',
+	},
+	roleDotIndicator: {
+		width: 8,
+		height: 8,
+		borderRadius: 4,
+		marginRight: 8,
+	},
+	roleHeaderLabel: {
+		fontSize: 12,
+		color: colors.text,
+	},
+	roleActionButtons: {
+		flexDirection: 'row',
+		alignItems: 'center',
+	},
+	roleActionButton: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		paddingVertical: 6,
+		paddingHorizontal: 10,
+		borderRadius: 10,
+		marginLeft: 6,
+	},
+	roleActionButtonUnlock: {
+		backgroundColor: colors.accent,
+	},
+	roleActionButtonUnlockText: {
+		color: '#ffffff',
+		fontSize: 11,
+		fontWeight: '800',
+		marginLeft: 4,
+	},
+	roleActionButtonLock: {
+		backgroundColor: '#ef4444',
+	},
+	roleActionButtonLockText: {
+		color: '#ffffff',
+		fontSize: 11,
+		fontWeight: '800',
+		marginLeft: 4,
+	},
+	pendingAlertBanner: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		backgroundColor: '#fef3c7',
+		paddingVertical: 10,
+		paddingHorizontal: spacing.md,
+		borderBottomWidth: 1,
+		borderBottomColor: '#fde68a',
+	},
+	pendingAlertText: {
+		fontSize: 11,
+		color: '#92400e',
+		fontWeight: '600',
+		marginLeft: 6,
+		flex: 1,
+	},
+	// APPROVALS LIST UI
+	approvalSectionContainer: {
+		backgroundColor: '#eff6ff',
+		margin: spacing.md,
+		borderRadius: 20,
+		padding: spacing.md,
+		borderWidth: 1.5,
+		borderColor: '#bfdbfe',
+	},
+	approvalHeaderRow: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		marginBottom: spacing.sm,
+	},
+	approvalTitleText: {
+		fontSize: 13,
+		fontWeight: '800',
+		color: colors.accent,
+		marginLeft: 6,
+	},
+	approvalCard: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+		backgroundColor: '#ffffff',
+		borderRadius: 16,
+		padding: 12,
+		marginBottom: 6,
+		borderWidth: 1,
+		borderColor: '#dbeafe',
+	},
+	approvalCardLeft: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		flex: 1,
+		marginRight: spacing.sm,
+	},
+	approvalCardEmoji: {
+		fontSize: 24,
+		marginRight: 10,
+	},
+	approvalCardTitle: {
+		fontSize: 12,
+		fontWeight: '700',
+		color: colors.text,
+	},
+	approvalCardPoints: {
+		fontSize: 11,
+		fontWeight: '800',
+		marginTop: 2,
+	},
+	approvalCardRight: {
+		flexDirection: 'row',
+		alignItems: 'center',
+	},
+	approvalBtn: {
+		width: 32,
+		height: 32,
+		borderRadius: 10,
+		justifyContent: 'center',
+		alignItems: 'center',
+		marginLeft: 6,
+	},
+	approvalBtnReject: {
+		backgroundColor: '#fee2e2',
+	},
+	approvalBtnApprove: {
+		backgroundColor: '#dcfce7',
+	},
+	// KIDS SELECTOR CAROUSEL
 	kidsSelectorContainer: {
 		backgroundColor: colors.surface,
 		borderBottomWidth: 1,
@@ -1693,6 +2204,7 @@ const styles = StyleSheet.create({
 		fontSize: 14,
 		color: colors.text,
 		fontWeight: '700',
+		textAlign: 'center',
 	},
 	scrollContent: {
 		flex: 1,
@@ -1831,10 +2343,33 @@ const styles = StyleSheet.create({
 		shadowRadius: 5,
 		elevation: 2,
 	},
+	requestButtonColor: {
+		backgroundColor: colors.accent,
+		shadowColor: colors.accent,
+	},
 	addButtonText: {
 		color: '#ffffff',
 		fontSize: 11,
 		fontWeight: '800',
+	},
+	disabledPenaltiesBlock: {
+		alignItems: 'center',
+		justifyContent: 'center',
+		backgroundColor: '#f8fafc',
+		borderRadius: 20,
+		padding: spacing.xl,
+		borderWidth: 1.5,
+		borderStyle: 'dashed',
+		borderColor: '#cbd5e1',
+		marginTop: spacing.sm,
+	},
+	disabledPenaltiesText: {
+		marginTop: spacing.sm,
+		fontSize: 12,
+		color: colors.muted,
+		textAlign: 'center',
+		lineHeight: 18,
+		paddingHorizontal: spacing.sm,
 	},
 	subTabsContainer: {
 		flexDirection: 'row',
@@ -2626,5 +3161,34 @@ const styles = StyleSheet.create({
 		textAlign: 'center',
 		lineHeight: 18,
 		paddingHorizontal: spacing.sm,
+	},
+	// PIN & SETTINGS SPECIAL STYLES
+	pinInstructions: {
+		fontSize: 12,
+		color: colors.muted,
+		textAlign: 'center',
+		lineHeight: 18,
+		marginBottom: spacing.md,
+	},
+	pinInput: {
+		backgroundColor: '#f1f5f9',
+		borderWidth: 2,
+		borderColor: colors.accent,
+		borderRadius: 16,
+		fontSize: 24,
+		fontWeight: '900',
+		textAlign: 'center',
+		paddingVertical: 12,
+		letterSpacing: 8,
+		color: colors.text,
+		width: '100%',
+		marginBottom: spacing.sm,
+	},
+	pinErrorText: {
+		color: '#ef4444',
+		fontSize: 11,
+		fontWeight: '600',
+		textAlign: 'center',
+		marginTop: 4,
 	},
 });

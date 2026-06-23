@@ -40,4 +40,22 @@ export default defineSchema({
 	})
 	.index('by_userId', ['userId'])
 	.index('by_childId', ['childId']),
+
+	parent_settings: defineTable({
+		userId: v.string(),
+		pin: v.string(), // 4-digit parent protection PIN (e.g. "1234")
+	}).index('by_userId', ['userId']),
+
+	pending_requests: defineTable({
+		userId: v.string(),
+		childId: v.string(),
+		type: v.string(), // "task" | "unlock" | "reward"
+		entryId: v.string(),
+		title: v.string(),
+		value: v.number(), // points associated
+		emoji: v.string(),
+		timestamp: v.number(),
+	})
+	.index('by_userId', ['userId'])
+	.index('by_childId', ['childId']),
 });
