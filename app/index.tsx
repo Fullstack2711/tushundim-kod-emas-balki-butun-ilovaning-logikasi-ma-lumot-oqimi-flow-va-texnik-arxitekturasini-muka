@@ -1029,49 +1029,44 @@ function KidsPointsApp() {
 								})}
 							</View>
 
-							{/* Sub tab items */}
-							<View style={styles.unlocksList}>
+							{/* Sub tab items - Grid of squares (3 items per row) */}
+							<View style={styles.unlocksGridContainer}>
 								{UNLOCK_TASKS.filter((task) => task.category === oneoffSubTab).map((task) => {
 									const isUnlocked = activeChild.unlocked?.includes(task.id);
 									return (
-										<View
+										<Pressable
 											key={task.id}
-											style={[styles.unlockRow, isUnlocked && styles.unlockRowCompleted]}
+											onPress={() => {
+												if (!isUnlocked) {
+													handleActionCommit(task.id, `O’rganildi: ${task.title}`, task.points, true);
+												}
+											}}
+											style={[
+												styles.unlockSquareCard,
+												isUnlocked && styles.unlockSquareCardCompleted,
+											]}
 										>
-											<View style={styles.unlockIconCol}>
-												<Text style={styles.unlockEmoji}>{task.emoji}</Text>
-											</View>
+											<Text style={styles.unlockSquareEmoji}>{task.emoji}</Text>
+											
+											<Text style={[styles.unlockSquareTitle, isUnlocked && styles.unlockSquareTitleCompleted]} numberOfLines={2}>
+												{task.title}
+											</Text>
+											
+											<Text style={styles.unlockSquarePoints}>+{task.points} ball</Text>
 
-											<View style={styles.unlockContentCol}>
-												<Text style={[styles.unlockTitle, isUnlocked && styles.unlockTitleCompleted]}>
-													{task.title}
-												</Text>
-												{task.description && (
-													<Text style={styles.unlockDesc}>{task.description}</Text>
-												)}
-												<Text style={styles.unlockPointsAward}>+{task.points} ball taqdim etiladi</Text>
-											</View>
-
-											<View style={styles.unlockActionCol}>
-												{isUnlocked ? (
-													<View style={styles.completedBadge}>
-														<Ionicons name="checkmark" size={14} color="#10b981" />
-														<Text style={styles.completedBadgeText}>Olingan</Text>
-													</View>
-												) : (
-													<TouchableOpacity
-														onPress={() =>
-															handleActionCommit(task.id, `O’rganildi: ${task.title}`, task.points, true)
-														}
-														style={[styles.unlockButton, currentRole === 'child' && styles.requestButtonColor]}
-													>
-														<Text style={styles.unlockButtonText}>
-															{currentRole === 'parent' ? `+${task.points}` : 'So’rash'}
-														</Text>
-													</TouchableOpacity>
-												)}
-											</View>
-										</View>
+											{isUnlocked ? (
+												<View style={styles.unlockSquareDoneBadge}>
+													<Ionicons name="checkmark-circle" size={10} color="#10b981" />
+													<Text style={styles.unlockSquareDoneText}>Olingan</Text>
+												</View>
+											) : (
+												<View style={[styles.unlockSquareActionBtn, currentRole === 'child' && styles.requestButtonColor]}>
+													<Text style={styles.unlockSquareActionBtnText}>
+														{currentRole === 'parent' ? 'Olish' : 'So’rash'}
+													</Text>
+												</View>
+											)}
+										</Pressable>
 									);
 								})}
 							</View>
@@ -3190,5 +3185,82 @@ const styles = StyleSheet.create({
 		fontWeight: '600',
 		textAlign: 'center',
 		marginTop: 4,
+	},
+	// 3-COLUMN SQUARES GRID STYLES FOR ONEOFF LESSONS
+	unlocksGridContainer: {
+		flexDirection: 'row',
+		flexWrap: 'wrap',
+		marginHorizontal: -4,
+		marginTop: spacing.md,
+	},
+	unlockSquareCard: {
+		width: '31.3%',
+		margin: '1%',
+		backgroundColor: colors.surface,
+		borderRadius: 20,
+		padding: 8,
+		alignItems: 'center',
+		justifyContent: 'space-between',
+		minHeight: 145,
+		borderWidth: 1,
+		borderColor: '#f1f5f9',
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.02,
+		shadowRadius: 4,
+		elevation: 1,
+	},
+	unlockSquareCardCompleted: {
+		backgroundColor: '#f0fdf4',
+		borderColor: '#bbf7d0',
+		borderWidth: 1.5,
+	},
+	unlockSquareEmoji: {
+		fontSize: 28,
+		marginBottom: 4,
+	},
+	unlockSquareTitle: {
+		fontSize: 10,
+		fontWeight: '700',
+		color: colors.text,
+		textAlign: 'center',
+		lineHeight: 13,
+		minHeight: 26,
+	},
+	unlockSquareTitleCompleted: {
+		color: '#15803d',
+	},
+	unlockSquarePoints: {
+		fontSize: 10,
+		fontWeight: '800',
+		color: colors.accent,
+		marginVertical: 4,
+	},
+	unlockSquareDoneBadge: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		backgroundColor: '#dcfce7',
+		borderRadius: 8,
+		paddingHorizontal: 6,
+		paddingVertical: 3,
+	},
+	unlockSquareDoneText: {
+		fontSize: 8,
+		fontWeight: '800',
+		color: '#15803d',
+		marginLeft: 2,
+	},
+	unlockSquareActionBtn: {
+		backgroundColor: '#10b981',
+		borderRadius: 8,
+		paddingVertical: 4,
+		paddingHorizontal: 8,
+		width: '100%',
+		alignItems: 'center',
+	},
+	unlockSquareActionBtnText: {
+		color: '#ffffff',
+		fontSize: 8,
+		fontWeight: '800',
 	},
 });
